@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect } from 'vitest'
+import { shallowMount } from '@vue/test-utils'
 import SupplierFormModal from '@/components/suppliers/SupplierFormModal.vue'
 
 const minimalFormData = {
@@ -8,27 +8,24 @@ const minimalFormData = {
 }
 
 describe('SupplierFormModal type options', () => {
-  afterEach(() => {
-    // Clean up the body after each test
-    document.body.innerHTML = ''
-  })
-
   it('shows Beverage Distributor and not Food & Beverages', () => {
-    const wrapper = mount(SupplierFormModal, {
-      props: { show: true, isEdit: false, formData: minimalFormData, isValid: false, formErrors: {}, loading: false, addAnother: false }
+    const wrapper = shallowMount(SupplierFormModal, {
+      props: { show: true, isEdit: false, formData: minimalFormData, isValid: false, formErrors: {}, loading: false, addAnother: false },
+      global: { stubs: { Teleport: true } }
     })
-    const bodyText = document.body.textContent
-    expect(bodyText).toContain('Beverage Distributor')
-    expect(bodyText).not.toContain('Food & Beverages')
-    expect(bodyText).not.toContain('Raw Materials')
+    const text = wrapper.text()
+    expect(text).toContain('Beverage Distributor')
+    expect(text).not.toContain('Food & Beverages')
+    expect(text).not.toContain('Raw Materials')
   })
 
   it('shows Logistics Partner and not Packaging Materials', () => {
-    const wrapper = mount(SupplierFormModal, {
-      props: { show: true, isEdit: false, formData: minimalFormData, isValid: false, formErrors: {}, loading: false, addAnother: false }
+    const wrapper = shallowMount(SupplierFormModal, {
+      props: { show: true, isEdit: false, formData: minimalFormData, isValid: false, formErrors: {}, loading: false, addAnother: false },
+      global: { stubs: { Teleport: true } }
     })
-    const bodyText = document.body.textContent
-    expect(bodyText).toContain('Logistics Partner')
-    expect(bodyText).not.toContain('Packaging Materials')
+    const text = wrapper.text()
+    expect(text).toContain('Logistics Partner')
+    expect(text).not.toContain('Packaging Materials')
   })
 })
