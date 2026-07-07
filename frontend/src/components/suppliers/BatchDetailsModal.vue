@@ -113,7 +113,7 @@
                         </td>
                       </tr>
                       <tr v-else-if="batchItems.length === 0">
-                        <td colspan="8" class="text-center py-4 text-secondary">No items found for this order</td>
+                        <td colspan="7" class="text-center py-4 text-secondary">No items found for this order</td>
                       </tr>
                       <tr v-for="(item, index) in batchItems" :key="index" v-else>
                         <td>{{ index + 1 }}</td>
