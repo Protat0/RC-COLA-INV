@@ -177,7 +177,7 @@ const showFilters = ref(false)
 const batchDetailsModal = ref(null)
 const stockUpdateModal = ref(null)
 
-const ACTIVE_STATUSES = new Set(['active', 'low_stock', 'expiring_soon'])
+const ACTIVE_STATUSES = new Set(['active', 'low_stock'])
 
 const sortedBatches = computed(() => {
   return [...batches.value].sort((a, b) => {
