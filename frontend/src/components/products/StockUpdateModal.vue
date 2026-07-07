@@ -436,7 +436,7 @@ const loadProductBatches = async (productId) => {
   try {
     const all = await fetchBatchesByProduct(productId)
     productActiveBatches.value = (all || []).filter(
-      b => ['active', 'low_stock', 'expiring_soon'].includes(b.status)
+      b => ['active', 'low_stock'].includes(b.status)
     )
   } catch {
     productActiveBatches.value = []
