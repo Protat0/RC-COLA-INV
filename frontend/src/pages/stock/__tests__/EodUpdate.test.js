@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 const mockComposable = {
   activeProducts: ref([
@@ -27,10 +27,6 @@ const mockComposable = {
 
 vi.mock('@/composables/api/useEodUpdate.js', () => ({
   useEodUpdate: () => mockComposable,
-}))
-
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn() }),
 }))
 
 import EodUpdate from '../EodUpdate.vue'
