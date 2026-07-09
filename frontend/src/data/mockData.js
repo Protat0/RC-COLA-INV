@@ -348,3 +348,38 @@ export const MOCK_TRANSACTIONS = [
     status: 'completed',
   },
 ]
+
+export const MOCK_EOD_HISTORY = [
+  {
+    eod_id: 'eod_20260707_001',
+    entry_date: '2026-07-07',
+    created_at: '2026-07-07T18:15:00.000Z',
+    items: [
+      { product_id: 'prod_001', product_name: 'RC Cola 330mL Can (Case/24)',   cases_sold: 15, loose_bottles: 3,  stock_before: 465, stock_after: 450, needs_reconciliation: false },
+      { product_id: 'prod_002', product_name: 'RC Cola 500mL PET (Case/24)',   cases_sold: 8,  loose_bottles: 0,  stock_before: 328, stock_after: 320, needs_reconciliation: false },
+      { product_id: 'prod_007', product_name: 'Royal Orange 330mL Can (Case/24)', cases_sold: 12, loose_bottles: 7, stock_before: 392, stock_after: 380, needs_reconciliation: false },
+    ],
+    status: 'applied',
+  },
+  {
+    eod_id: 'eod_20260706_001',
+    entry_date: '2026-07-06',
+    created_at: '2026-07-06T17:45:00.000Z',
+    items: [
+      { product_id: 'prod_001', product_name: 'RC Cola 330mL Can (Case/24)',   cases_sold: 20, loose_bottles: 5,  stock_before: 485, stock_after: 465, needs_reconciliation: false },
+      { product_id: 'prod_006', product_name: 'RC Cola 250mL PET (Case/24)',   cases_sold: 35, loose_bottles: 14, stock_before: 65,  stock_after: 30,  needs_reconciliation: false },
+      { product_id: 'prod_010', product_name: 'Royal Grape 330mL Can (Case/24)', cases_sold: 5, loose_bottles: 0,  stock_before: 5,   stock_after: 0,   needs_reconciliation: false },
+    ],
+    status: 'applied',
+  },
+  {
+    eod_id: 'eod_20260705_001',
+    entry_date: '2026-07-05',
+    created_at: '2026-07-05T19:00:00.000Z',
+    items: [
+      { product_id: 'prod_005', product_name: 'RC Cola 2L PET (Case/6)',      cases_sold: 68, loose_bottles: 2,  stock_before: 60,  stock_after: -8,  needs_reconciliation: true },
+      { product_id: 'prod_011', product_name: 'RC Lemon 330mL Can (Case/24)', cases_sold: 10, loose_bottles: 9,  stock_before: 290, stock_after: 280, needs_reconciliation: false },
+    ],
+    status: 'flagged',
+  },
+]

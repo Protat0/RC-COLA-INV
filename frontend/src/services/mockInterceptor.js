@@ -8,6 +8,7 @@ import {
   MOCK_SALES_BY_ITEM,
   MOCK_MONTHLY_DATA,
   MOCK_TRANSACTIONS,
+  MOCK_EOD_HISTORY,
 } from '../data/mockData.js'
 
 function mockAdapter(data, status = 200) {
@@ -85,12 +86,55 @@ function getHandler(url) {
     return mockAdapter({ data: [] })
   }
 
+  // EOD Stock History
+  if (url.includes('/stock/eod/history/')) {
+    return mockAdapter({ success: true, data: MOCK_EOD_HISTORY })
+  }
+
   // Everything else — silent empty success so no error toasts fire
   return mockAdapter({ data: [], success: true })
 }
 
+function getPostHandler(config) {
+  const url = config.url || ''
+
+  if (url.includes('/stock/eod/')) {
+    return (cfg) => {
+      const body = JSON.parse(cfg.data || '{}')
+      body.items.forEach(item => {
+        const product = MOCK_PRODUCTS.find(p => p.product_id === item.product_id)
+        if (product) {
+          product.total_stock = item.stock_after
+          product.loose_bottles = item.loose_bottles
+        }
+      })
+      const newEntry = {
+        eod_id: `eod_${Date.now()}`,
+        entry_date: body.entry_date,
+        created_at: new Date().toISOString(),
+        items: body.items,
+        status: body.items.some(i => i.needs_reconciliation) ? 'flagged' : 'applied',
+      }
+      MOCK_EOD_HISTORY.unshift(newEntry)
+      return Promise.resolve({
+        data: { success: true, data: newEntry },
+        status: 200,
+        statusText: 'OK',
+        headers: { 'content-type': 'application/json' },
+        config: cfg,
+        request: {},
+      })
+    }
+  }
+
+  return null
+}
+
 api.interceptors.request.use((config) => {
-  const handler = getHandler(config.url || '')
+  const method = (config.method || 'get').toLowerCase()
+  const handler = method === 'post'
+    ? getPostHandler(config)
+    : getHandler(config.url || '')
   if (handler) {
     config.adapter = handler
   }
