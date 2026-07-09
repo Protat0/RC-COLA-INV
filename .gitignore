@@ -30,3 +30,7 @@ desktop.ini
 *.ntvs*
 *.njsproj
 *.sln
+
+# Claude Code / superpowers
+.claude/
+.superpowers/
