@@ -25,7 +25,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  DollarSign
+  DollarSign,
+  ClipboardList,
+  History
 } from 'lucide-vue-next'
 
 export default {
@@ -57,5 +59,7 @@ export default {
     app.component('ChevronRight', ChevronRight)
     app.component('ChevronUp', ChevronUp)
     app.component('DollarSign', DollarSign)
+    app.component('ClipboardList', ClipboardList)
+    app.component('History', History)
   }
 }

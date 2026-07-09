@@ -141,13 +141,33 @@
               </router-link>
             </li>
             <li class="nav-subitem">
-              <router-link 
-                to="/logs" 
+              <router-link
+                to="/logs"
                 class="nav-sublink"
                 :class="{ 'active-sub': isActiveRoute('/logs') }"
               >
                 <FileText :size="16" class="nav-subicon" />
                 Logs
+              </router-link>
+            </li>
+            <li class="nav-subitem">
+              <router-link
+                to="/stock/eod"
+                class="nav-sublink"
+                :class="{ 'active-sub': isActiveRoute('/stock/eod') }"
+              >
+                <ClipboardList :size="16" class="nav-subicon" />
+                EOD Update
+              </router-link>
+            </li>
+            <li class="nav-subitem">
+              <router-link
+                to="/stock/history"
+                class="nav-sublink"
+                :class="{ 'active-sub': isActiveRoute('/stock/history') }"
+              >
+                <History :size="16" class="nav-subicon" />
+                Stock History
               </router-link>
             </li>
             </ul>
@@ -290,7 +310,7 @@
 <script>
 import apiService from '../services/api.js'
 import { useAuth } from '@/composables/auth/useAuth.js'
-import { 
+import {
   LayoutDashboard,
   Package,
   Truck,
@@ -308,10 +328,12 @@ import {
   LogOut,
   Box,
   FolderOpen,
-  FileText
+  FileText,
+  ClipboardList,
+  History
 } from 'lucide-vue-next'
 
-const inventoryRoutePrefixes = ['/inventory', '/products', '/categories', '/logs']
+const inventoryRoutePrefixes = ['/inventory', '/products', '/categories', '/logs', '/stock']
 const reportsRoutePrefixes = ['/salesbyitem', '/salesbycategory', '/reports']
 
 export default {
@@ -334,7 +356,9 @@ export default {
     LogOut,
     Box,
     FolderOpen,
-    FileText
+    FileText,
+    ClipboardList,
+    History
   },
   setup() {
     const { user } = useAuth()
