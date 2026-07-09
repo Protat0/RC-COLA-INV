@@ -101,7 +101,8 @@ function getPostHandler(config) {
   if (url.includes('/stock/eod/')) {
     return (cfg) => {
       const body = JSON.parse(cfg.data || '{}')
-      body.items.forEach(item => {
+      const items = body.items ?? []
+      items.forEach(item => {
         const product = MOCK_PRODUCTS.find(p => p.product_id === item.product_id)
         if (product) {
           product.total_stock = item.stock_after
@@ -112,8 +113,8 @@ function getPostHandler(config) {
         eod_id: `eod_${Date.now()}`,
         entry_date: body.entry_date,
         created_at: new Date().toISOString(),
-        items: body.items,
-        status: body.items.some(i => i.needs_reconciliation) ? 'flagged' : 'applied',
+        items: items,
+        status: items.some(i => i.needs_reconciliation) ? 'flagged' : 'applied',
       }
       MOCK_EOD_HISTORY.unshift(newEntry)
       return Promise.resolve({
