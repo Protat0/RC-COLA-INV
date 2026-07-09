@@ -15,6 +15,7 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import './services/mockInterceptor.js'
 import lucidePlugin from './plugins/lucide.js'
 
 // Make Bootstrap available globally

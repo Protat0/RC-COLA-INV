@@ -34,14 +34,9 @@ function hasValidToken() {
   return !!token
 }
 
-// Auth guard function
+// Auth guard function (bypassed — redirect to dashboard by default)
 function requireAuth(to, from, next) {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    next()
-  } else {
-    next('/login')
-  }
+  next()
 }
 
 const router = createRouter({
@@ -272,10 +267,15 @@ const router = createRouter({
         }
       ]
     },
-    // Catch all route - redirect to login
+    // Root redirect to dashboard
+    {
+      path: '/',
+      redirect: '/dashboard'
+    },
+    // Catch all route - redirect to dashboard
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/login'
+      redirect: '/dashboard'
     }
   ]
 })
