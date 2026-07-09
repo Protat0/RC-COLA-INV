@@ -1,47 +1,18 @@
 <template>
   <div class="container-fluid pt-2 pb-4 products-page surface-secondary">
-    <!-- Reports Section -->
+    <!-- Stat Cards -->
     <div class="row mb-3" v-if="!loading">
       <div class="col-6 col-md-3 mb-2">
-        <CardTemplate
-          size="xs"
-          border-color="error"
-          border-position="start"
-          title="Low Stock"
-          :value="productStats.lowStock"
-          subtitle="Critical Items"
-        />
+        <CardTemplate size="xs" border-color="error" border-position="start" title="Low Stock" :value="productStats.lowStock" subtitle="Critical Items" />
       </div>
       <div class="col-6 col-md-3 mb-2">
-        <CardTemplate
-          size="xs"
-          border-color="info"
-          border-position="start"
-          title="Expiring"
-          :value="expiringCount"
-          subtitle="30 Days"
-        />
+        <CardTemplate size="xs" border-color="error" border-position="start" title="Out of Stock" :value="productStats.outOfStock" subtitle="Products" />
       </div>
       <div class="col-6 col-md-3 mb-2">
-        <CardTemplate
-          size="xs"
-          border-color="success"
-          border-position="start"
-          title="Total"
-          :value="productStats.total"
-          subtitle="Products"
-        />
+        <CardTemplate size="xs" border-color="success" border-position="start" title="Total" :value="productStats.total" subtitle="Products" />
       </div>
       <div class="col-6 col-md-3 mb-2">
-        <CardTemplate
-          size="xs"
-          border-color="accent"
-          border-position="start"
-          title="Categories"
-          :value="totalActiveCategories"
-          subtitle="Total"
-          :loading="categoriesLoading"
-        />
+        <CardTemplate size="xs" border-color="warning" border-position="start" title="Loose Bottles" :value="totalLooseBottles" subtitle="Total across products" />
       </div>
     </div>
 
@@ -59,15 +30,14 @@
       <button class="btn btn-submit" @click="handleRefresh">Try Again</button>
     </div>
 
-    <!-- Action Bar and Filters -->
+    <!-- Action Bar -->
     <div v-if="!loading || hasProducts" class="action-bar-container mb-3">
       <div class="action-bar-controls surface-card border-theme">
         <div class="action-row">
           <!-- Left Side: Main Actions -->
           <div v-if="selectedProductIds.length === 0" class="d-flex gap-2">
-            <!-- Add Products Dropdown -->
             <div class="dropdown dropdown-container" ref="addDropdown">
-              <button 
+              <button
                 class="btn btn-add btn-sm btn-with-icon-sm dropdown-toggle"
                 type="button"
                 @click="toggleAddDropdown"
@@ -76,11 +46,7 @@
                 <Plus :size="14" />
                 ADD ITEM
               </button>
-              
-              <div 
-                class="dropdown-menu add-dropdown-menu" 
-                :class="{ 'show': showAddDropdown }"
-              >
+              <div class="dropdown-menu add-dropdown-menu" :class="{ 'show': showAddDropdown }">
                 <button class="dropdown-item" @click="handleSingleProduct">
                   <div class="d-flex align-items-center gap-3">
                     <Plus :size="16" class="text-accent" />
@@ -90,8 +56,6 @@
                     </div>
                   </div>
                 </button>
-                
-                
                 <button class="dropdown-item" @click="handleImport">
                   <div class="d-flex align-items-center gap-3">
                     <FileText :size="16" class="text-accent" />
@@ -103,13 +67,8 @@
                 </button>
               </div>
             </div>
-
-            <button class="btn btn-filter btn-sm btn-with-icon-sm" @click="toggleColumnFilter">
-              <Settings :size="14" />
-              COLUMNS
-            </button>
-            <button 
-              class="btn btn-export btn-sm" 
+            <button
+              class="btn btn-export btn-sm"
               @click="handleExport"
               :disabled="filteredProducts.length === 0 || exportLoading"
             >
@@ -119,7 +78,7 @@
 
           <!-- Selection Actions -->
           <div v-if="selectedProductIds.length > 0" class="d-flex gap-2">
-            <button 
+            <button
               class="btn btn-delete btn-sm btn-with-icon-sm"
               @click="handleDeleteSelected"
               :disabled="bulkDeleteLoading"
@@ -129,42 +88,21 @@
             </button>
           </div>
 
-          <!-- Right Side: Filters and Search -->
+          <!-- Right Side: Search + Filter -->
           <div class="d-flex align-items-center gap-2">
-            <!-- Search Toggle -->
-            <button 
+            <button
               class="btn btn-filter btn-sm search-toggle"
               @click="toggleSearchMode"
               :class="{ 'state-active': searchMode }"
             >
               <Search :size="16" />
             </button>
-
-            <!-- Filter Dropdowns -->
             <template v-if="!searchMode">
               <div class="filter-dropdown">
-                <label class="filter-label text-tertiary-medium">Category</label>
-                <select 
-                  class="form-select form-select-sm input-theme" 
-                  :value="filters.category_id" 
-                  @change="handleCategoryFilter"
-                >
-                  <option value="">All items</option>
-                  <option 
-                    v-for="category in activeCategories" 
-                    :key="category.category_id"
-                    :value="category.category_id"
-                  >
-                    {{ category.category_name }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="filter-dropdown">
                 <label class="filter-label text-tertiary-medium">Stock alert</label>
-                <select 
-                  class="form-select form-select-sm input-theme" 
-                  :value="filters.stock_level" 
+                <select
+                  class="form-select form-select-sm input-theme"
+                  :value="filters.stock_level"
                   @change="handleStockFilter"
                 >
                   <option value="">All items</option>
@@ -173,19 +111,17 @@
                 </select>
               </div>
             </template>
-
-            <!-- Search Bar -->
             <div v-if="searchMode" class="search-container">
               <div class="position-relative">
-                <input 
+                <input
                   ref="searchInput"
-                  :value="filters.search" 
+                  :value="filters.search"
                   @input="handleSearchInput"
-                  type="text" 
+                  type="text"
                   class="form-control form-control-sm search-input input-theme"
                   placeholder="Search products..."
                 />
-                <button 
+                <button
                   class="btn btn-sm btn-link position-absolute end-0 top-50 translate-middle-y text-tertiary-medium"
                   @click="handleClearSearch"
                   style="border: none; padding: 0.25rem;"
@@ -199,197 +135,128 @@
       </div>
     </div>
 
-    <!-- Data Table -->
-    <div class="table-wrapper">
-      <DataTable
-        v-if="!loading || hasProducts"
-        :total-items="filteredProducts.length"
-        :current-page="currentPage"
-        :items-per-page="itemsPerPage"
-        @page-changed="handlePageChange"
-      >
-        <template #header>
-          <tr>
-            <th style="width: 40px;">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                @change="handleSelectAll"
-                :checked="allSelected"
-                :indeterminate.prop="someSelected"
-              />
-            </th>
-            <th class="sortable-header" @click="handleSort('name')">
-              <span class="header-content">
-                Item name
-                <span class="sort-icon" :class="getSortIconClass('name')">
-                  <span v-if="sortColumn === 'name' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'name' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th v-if="isColumnVisible('sku')" style="width: 100px;" class="sortable-header" @click="handleSort('sku')">
-              <span class="header-content">
-                SKU
-                <span class="sort-icon" :class="getSortIconClass('sku')">
-                  <span v-if="sortColumn === 'sku' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'sku' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th v-if="isColumnVisible('category')" style="width: 100px;" class="sortable-header" @click="handleSort('category')">
-              <span class="header-content">
-                Category
-                <span class="sort-icon" :class="getSortIconClass('category')">
-                  <span v-if="sortColumn === 'category' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'category' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th v-if="isColumnVisible('sellingPrice')" style="width: 160px; text-align: right;" class="sortable-header" @click="handleSort('sellingPrice')">
-              <span class="header-content justify-content-end">
-                Selling Price
-                <span class="sort-icon" :class="getSortIconClass('sellingPrice')">
-                  <span v-if="sortColumn === 'sellingPrice' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'sellingPrice' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th v-if="isColumnVisible('costPrice')" style="width: 120px; text-align: right;" class="sortable-header" @click="handleSort('costPrice')">
-              <span class="header-content justify-content-end">
-                Cost Price
-                <span class="sort-icon" :class="getSortIconClass('costPrice')">
-                  <span v-if="sortColumn === 'costPrice' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'costPrice' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th style="width: 80px;" class="sortable-header" @click="handleSort('margin')">
-              <span class="header-content">
-                Margin
-                <span class="sort-icon" :class="getSortIconClass('margin')">
-                  <span v-if="sortColumn === 'margin' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'margin' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th v-if="isColumnVisible('stock')" style="width: 100px;" class="sortable-header" @click="handleSort('stock')">
-              <span class="header-content">
-                In stock
-                <span class="sort-icon" :class="getSortIconClass('stock')">
-                  <span v-if="sortColumn === 'stock' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'stock' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th v-if="isColumnVisible('status')" style="width: 100px;" class="sortable-header" @click="handleSort('status')">
-              <span class="header-content">
-                Status
-                <span class="sort-icon" :class="getSortIconClass('status')">
-                  <span v-if="sortColumn === 'status' && sortDirection === 'asc'">↑</span>
-                  <span v-else-if="sortColumn === 'status' && sortDirection === 'desc'">↓</span>
-                  <span v-else class="sort-idle">⇅</span>
-                </span>
-              </span>
-            </th>
-            <th style="width: 160px;">Actions</th>
-          </tr>
-        </template>
+    <!-- Grid Control Bar: select-all + count + sort -->
+    <div
+      v-if="(!loading || hasProducts) && filteredProducts.length > 0"
+      class="grid-control-bar mb-2"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          @change="handleSelectAll"
+          :checked="allSelected"
+          :indeterminate.prop="someSelected"
+          title="Select all on this page"
+          style="cursor: pointer;"
+        />
+        <span class="text-tertiary-medium" style="font-size: 0.8rem;">
+          {{ filteredProducts.length }} product{{ filteredProducts.length !== 1 ? 's' : '' }}<span v-if="selectedProductIds.length > 0"> · {{ selectedProductIds.length }} selected</span>
+        </span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label class="text-tertiary-medium mb-0" style="font-size: 0.75rem; white-space: nowrap;">Sort</label>
+        <select
+          class="form-select form-select-sm input-theme"
+          style="width: auto;"
+          :value="currentSortKey"
+          @change="handleSortChange"
+        >
+          <option value="name-asc">Name (A–Z)</option>
+          <option value="name-desc">Name (Z–A)</option>
+          <option value="stock-desc">Stock (High–Low)</option>
+          <option value="stock-asc">Stock (Low–High)</option>
+          <option value="sellingPrice-asc">Price (Low–High)</option>
+          <option value="sellingPrice-desc">Price (High–Low)</option>
+        </select>
+      </div>
+    </div>
 
-        <template #body>
-          <tr 
-            v-for="product in paginatedProducts"
-            :key="product.product_id"
-            :class="getRowClass(product)"
+    <!-- Product Card Grid -->
+    <div v-if="!loading || hasProducts" class="product-cards-grid">
+      <div
+        v-for="product in paginatedProducts"
+        :key="product.product_id"
+        class="product-card surface-card"
+        :class="getCardClass(product)"
+      >
+        <!-- Top row: checkbox -->
+        <div class="pc-top">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            :value="product.product_id"
+            :checked="selectedProductIds.includes(product.product_id)"
+            @change="handleProductSelect(product.product_id, $event.target.checked)"
+            style="cursor: pointer;"
+          />
+        </div>
+
+        <!-- Product name -->
+        <div class="pc-name" :class="getProductNameClass(product)">
+          {{ product.product_name }}
+        </div>
+
+        <!-- Stock + Case size -->
+        <div class="pc-stock-row">
+          <div class="pc-stock-item">
+            <span class="pc-stock-value" :class="getStockDisplayClass(product)">
+              {{ getProductStock(product) }}
+            </span>
+            <span class="pc-stock-label">cases</span>
+          </div>
+          <div class="pc-stock-divider"></div>
+          <div class="pc-stock-item">
+            <span class="pc-stock-value" style="color: var(--text-secondary);">
+              {{ product.case_size ?? '—' }}
+            </span>
+            <span class="pc-stock-label">per case</span>
+          </div>
+        </div>
+
+        <!-- Loose bottles -->
+        <div class="pc-loose-row">
+          <span class="pc-loose-label">Loose bottles</span>
+          <span
+            class="pc-loose-count"
+            :class="(looseBottles[product.product_id] ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'"
+          >{{ looseBottles[product.product_id] ?? 0 }}</span>
+        </div>
+
+        <!-- Pricing row -->
+        <div class="pc-price-row">
+          <span class="pc-price">₱{{ formatPrice(product.selling_price || product.price) }}</span>
+          <span
+            class="pc-margin"
+            :class="getMarginClass(getProductCostPrice(product), product.selling_price || product.price)"
           >
-            <td>
-              <input
-                type="checkbox"
-                class="form-check-input"
-                :value="product.product_id"
-                :checked="selectedProductIds.includes(product.product_id)"
-                @change="handleProductSelect(product.product_id, $event.target.checked)"
-              />
-            </td>
-            <td>
-              <div :class="['fw-medium', getProductNameClass(product)]">
-                {{ product.product_name }}
-              </div>
-            </td>
-            <td v-if="isColumnVisible('sku')" class="text-left">
-              <code class="text-primary surface-tertiary px-2 py-1 rounded">
-                {{ product.SKU || '—' }}
-              </code>
-            </td>
-            <td v-if="isColumnVisible('category')">
-              <span :class="['badge', 'rounded-pill', getCategoryBadgeClass(product.category_id)]">
-                {{ getCategoryName(product.category_id) }}
-              </span>
-            </td>
-            <td v-if="isColumnVisible('sellingPrice')" class="text-end fw-medium text-secondary">
-              ₱{{ formatPrice(product.selling_price) }}
-            </td>
-            <td v-if="isColumnVisible('costPrice')" class="text-end fw-medium text-secondary">
-              ₱{{ formatPrice(getProductCostPrice(product)) }}
-            </td>
-            <td class="text-center fw-medium">
-              <span :class="getMarginClass(getProductCostPrice(product), product.selling_price)">
-                {{ calculateMargin(getProductCostPrice(product), product.selling_price) }}%
-              </span>
-            </td>
-            <td v-if="isColumnVisible('stock')" class="text-end">
-              <span :class="getStockDisplayClass(product)">
-                {{ getProductStock(product) || '—' }}
-              </span>
-            </td>
-            <td v-if="isColumnVisible('status')" class="text-center">
-              <span :class="getStatusBadgeClass(product.status)">
-                {{ getStatusText(product.status) }}
-              </span>
-            </td>
-            <td>
-              <div class="d-flex gap-1 justify-content-center">
-                <button 
-                  class="btn btn-outline-secondary btn-icon-only btn-xs action-btn action-btn-edit" 
-                  @click="editProduct(product)"
-                  title="Edit"
-                >
-                  <Edit :size="12" />
-                </button>
-                <button 
-                  class="btn btn-outline-primary btn-icon-only btn-xs action-btn action-btn-view" 
-                  @click="viewProduct(product)"
-                  title="View"
-                >
-                  <Eye :size="12" />
-                </button>
-                <button 
-                  class="btn btn-outline-info btn-icon-only btn-xs action-btn action-btn-stock" 
-                  @click="restockProduct(product)"
-                  title="Stock"
-                >
-                  <Package :size="12" />
-                </button>
-                <button 
-                  class="btn btn-outline-danger btn-icon-only btn-xs action-btn action-btn-delete" 
-                  @click="handleDeleteProduct(product)"
-                  title="Delete"
-                  :disabled="deleteLoading"
-                >
-                  <Trash2 :size="12" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </DataTable>
+            {{ calculateMargin(getProductCostPrice(product), product.selling_price || product.price) }}%
+          </span>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="pc-actions">
+          <button class="btn btn-filter btn-sm pc-action-btn" @click="viewProduct(product)">View</button>
+          <button class="btn btn-add btn-sm pc-action-btn" @click="restockProduct(product)">Update Stock</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div
+      v-if="(!loading || hasProducts) && totalPages > 1"
+      class="product-grid-pagination mt-3 d-flex justify-content-between align-items-center"
+    >
+      <span class="text-tertiary-medium" style="font-size: 0.8rem;">{{ paginationInfo }}</span>
+      <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-filter" @click="handlePageChange(1)" :disabled="currentPage === 1">«</button>
+        <button class="btn btn-sm btn-filter" @click="handlePageChange(currentPage - 1)" :disabled="currentPage === 1">‹</button>
+        <span class="px-2 d-flex align-items-center" style="font-size: 0.85rem; color: var(--text-secondary);">
+          {{ currentPage }} / {{ totalPages }}
+        </span>
+        <button class="btn btn-sm btn-filter" @click="handlePageChange(currentPage + 1)" :disabled="currentPage >= totalPages">›</button>
+        <button class="btn btn-sm btn-filter" @click="handlePageChange(totalPages)" :disabled="currentPage >= totalPages">»</button>
+      </div>
     </div>
 
     <!-- Empty State -->
@@ -400,16 +267,16 @@
           <p class="text-tertiary-medium mb-3">
             {{ !hasProducts ? 'No products found' : 'No products match the current filters' }}
           </p>
-          <button 
-            v-if="!hasProducts" 
-            class="btn btn-add btn-with-icon" 
+          <button
+            v-if="!hasProducts"
+            class="btn btn-add btn-with-icon"
             @click="handleSingleProduct"
           >
             <Plus :size="16" />
             Add First Product
           </button>
-          <button 
-            v-else 
+          <button
+            v-else
             class="btn btn-filter btn-with-icon"
             @click="handleClearFilters"
           >
@@ -420,10 +287,9 @@
       </div>
     </div>
 
-    <!-- Modular Components -->
+    <!-- Modals -->
     <AddProductModal
       ref="addProductModal"
-      :categories="activeCategories"
       @success="handleProductSuccess"
     />
 
@@ -446,13 +312,6 @@
       @import-failed="handleImportError"
     />
 
-    <ColumnFilterModal
-      :show="showColumnFilter"
-      :current-visible-columns="visibleColumns"
-      @close="showColumnFilter = false"
-      @apply="handleColumnChanges"
-    />
-
     <DeleteConfirmationModal
       ref="deleteConfirmationModal"
       :is-loading="deleteLoading || bulkDeleteLoading"
@@ -464,14 +323,11 @@
 <script>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useProducts } from '@/composables/api/useProducts'
-import { useCategories } from '@/composables/api/useCategories'
 import AddProductModal from '@/components/products/AddProductModal.vue'
 import StockUpdateModal from '@/components/products/StockUpdateModal.vue'
 import ViewProductModal from '@/components/products/ViewProductModal.vue'
-import DataTable from '@/components/common/TableTemplate.vue'
 import CardTemplate from '@/components/common/CardTemplate.vue'
 import ImportModal from '@/components/products/ImportModal.vue'
-import ColumnFilterModal from '@/components/products/ColumnFilterModal.vue'
 import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal.vue'
 
 export default {
@@ -480,15 +336,12 @@ export default {
     AddProductModal,
     StockUpdateModal,
     ViewProductModal,
-    ColumnFilterModal,
     ImportModal,
-    DataTable,
     CardTemplate,
     DeleteConfirmationModal
   },
-  
+
   setup() {
-    // Use the products composable
     const {
       products,
       filteredProducts,
@@ -511,24 +364,12 @@ export default {
       clearError
     } = useProducts()
 
-    // Clear all module-level state before the first render so navigating
-    // back never flashes stale search results or cached product data.
     resetFilters()
     products.value = []
     loading.value = true
 
-    // Use categories composable
-    const {
-      activeCategories,
-      totalActiveCategories,
-      loading: categoriesLoading,
-      initializeCategories
-    } = useCategories()
-
-    // Local state for UI
     const searchMode = ref(false)
     const showAddDropdown = ref(false)
-    const showColumnFilter = ref(false)
     const selectedProductIds = ref([])
     const deleteConfirmationModal = ref(null)
     const productToDelete = ref(null)
@@ -538,21 +379,44 @@ export default {
     const addDropdown = ref(null)
     const searchInput = ref(null)
 
-    // Sorting state — default: alphabetical by name
+    const looseBottles = ref({})
+
+    const initLooseBottles = () => {
+      const map = {}
+      products.value.forEach(p => {
+        map[p.product_id] = p.loose_bottles ?? 0
+      })
+      looseBottles.value = map
+    }
+
+    const totalLooseBottles = computed(() => {
+      return Object.values(looseBottles.value).reduce((sum, n) => sum + n, 0)
+    })
+
+    const incrementLoose = (productId) => {
+      looseBottles.value = { ...looseBottles.value, [productId]: (looseBottles.value[productId] ?? 0) + 1 }
+    }
+
+    const decrementLoose = (productId) => {
+      const current = looseBottles.value[productId] ?? 0
+      if (current > 0) {
+        looseBottles.value = { ...looseBottles.value, [productId]: current - 1 }
+      }
+    }
+
     const sortColumn = ref('name')
     const sortDirection = ref('asc')
 
-    // Visible columns state
-    const visibleColumns = ref({
-      sku: true,
-      category: true,
-      sellingPrice: true,
-      costPrice: true,
-      stock: true,
-      status: true
-    })
+    const currentSortKey = computed(() => `${sortColumn.value}-${sortDirection.value}`)
 
-    // Sorted + filtered products
+    const handleSortChange = (event) => {
+      const val = event.target.value
+      const dashIdx = val.lastIndexOf('-')
+      sortColumn.value = val.slice(0, dashIdx)
+      sortDirection.value = val.slice(dashIdx + 1)
+      currentPage.value = 1
+    }
+
     const sortedFilteredProducts = computed(() => {
       if (!sortColumn.value || !sortDirection.value) return filteredProducts.value
 
@@ -568,18 +432,12 @@ export default {
         } else if (col === 'sku') {
           aVal = (a.SKU || '').toLowerCase()
           bVal = (b.SKU || '').toLowerCase()
-        } else if (col === 'category') {
-          aVal = getCategoryName(a.category_id).toLowerCase()
-          bVal = getCategoryName(b.category_id).toLowerCase()
         } else if (col === 'sellingPrice') {
-          aVal = parseFloat(a.selling_price || 0)
-          bVal = parseFloat(b.selling_price || 0)
+          aVal = parseFloat(a.selling_price || a.price || 0)
+          bVal = parseFloat(b.selling_price || b.price || 0)
         } else if (col === 'costPrice') {
           aVal = parseFloat(getProductCostPrice(a) || 0)
           bVal = parseFloat(getProductCostPrice(b) || 0)
-        } else if (col === 'margin') {
-          aVal = calculateMargin(getProductCostPrice(a), a.selling_price)
-          bVal = calculateMargin(getProductCostPrice(b), b.selling_price)
         } else if (col === 'stock') {
           aVal = getProductStock(a) || 0
           bVal = getProductStock(b) || 0
@@ -596,31 +454,39 @@ export default {
       })
     })
 
-    // Computed properties for pagination and selection
+    const totalPages = computed(() =>
+      Math.max(1, Math.ceil(filteredProducts.value.length / itemsPerPage.value))
+    )
+
+    const paginationInfo = computed(() => {
+      const total = filteredProducts.value.length
+      if (total === 0) return ''
+      const start = (currentPage.value - 1) * itemsPerPage.value + 1
+      const end = Math.min(currentPage.value * itemsPerPage.value, total)
+      return `${start}–${end} of ${total}`
+    })
+
     const paginatedProducts = computed(() => {
       const start = (currentPage.value - 1) * itemsPerPage.value
-      const end = start + itemsPerPage.value
-      return sortedFilteredProducts.value.slice(start, end)
+      return sortedFilteredProducts.value.slice(start, start + itemsPerPage.value)
     })
 
-    const allSelected = computed(() => {
-      return paginatedProducts.value.length > 0 && 
-             paginatedProducts.value.every(p => selectedProductIds.value.includes(p.product_id))
-    })
+    const allSelected = computed(() =>
+      paginatedProducts.value.length > 0 &&
+      paginatedProducts.value.every(p => selectedProductIds.value.includes(p.product_id))
+    )
 
-    const someSelected = computed(() => {
-      return selectedProductIds.value.length > 0 && !allSelected.value
-    })
+    const someSelected = computed(() =>
+      selectedProductIds.value.length > 0 && !allSelected.value
+    )
 
-    const selectedProducts = computed(() => {
-      return products.value.filter(p => selectedProductIds.value.includes(p.product_id))
-    })
+    const selectedProducts = computed(() =>
+      products.value.filter(p => selectedProductIds.value.includes(p.product_id))
+    )
 
-    // Calculate expiring products (updated for batch system)
     const calculateExpiringCount = () => {
       const now = new Date()
       const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000))
-
       expiringCount.value = products.value.filter(product => {
         const expiryDate = product.oldest_batch_expiry ?? product.expiry_date
         if (!expiryDate) return false
@@ -629,16 +495,9 @@ export default {
       }).length
     }
 
-    // Helper functions for batch-aware data
-    const getProductStock = (product) => {
-      return product.total_stock ?? product.stock ?? 0
-    }
+    const getProductStock = (product) => product.total_stock ?? product.stock ?? 0
+    const getProductCostPrice = (product) => product.average_cost_price ?? product.cost_price ?? 0
 
-    const getProductCostPrice = (product) => {
-      return product.average_cost_price ?? product.cost_price ?? 0
-    }
-
-    // Event handlers
     const handleRefresh = async () => {
       clearError()
       await fetchProducts()
@@ -742,55 +601,22 @@ export default {
       searchMode.value = !searchMode.value
       if (searchMode.value) {
         await nextTick()
-        if (searchInput.value) {
-          searchInput.value.focus()
-        }
+        searchInput.value?.focus()
       }
     }
 
-    const toggleAddDropdown = () => {
-      showAddDropdown.value = !showAddDropdown.value
-    }
+    const toggleAddDropdown = () => { showAddDropdown.value = !showAddDropdown.value }
+    const closeAddDropdown = () => { showAddDropdown.value = false }
 
-    const closeAddDropdown = () => {
-      showAddDropdown.value = false
-    }
-
-    const toggleColumnFilter = () => {
-      showColumnFilter.value = !showColumnFilter.value
-    }
-
-    // Utility functions
-    const isColumnVisible = (column) => {
-      return visibleColumns.value[column]
-    }
-
-    const getRowClass = (product) => {
+    const getCardClass = (product) => {
       const stock = getProductStock(product)
-      if (stock === 0) return 'table-danger'
-      if (stock <= (product.low_stock_threshold || 15)) return 'table-warning'
+      if (stock === 0) return 'pc-out-of-stock'
+      if (stock <= (product.low_stock_threshold || 15)) return 'pc-low-stock'
       return ''
     }
 
-    const getProductNameClass = (product) => {
-      if (product.status === 'inactive') return 'text-tertiary-medium'
-      return 'text-primary'
-    }
-
-    const getCategoryBadgeClass = (categoryId) => {
-      const category = activeCategories.value.find(c => c.category_id === categoryId)
-      if (!category) return 'bg-secondary'
-      
-      const colors = ['bg-primary', 'bg-info', 'bg-success', 'bg-warning', 'bg-danger']
-      const index = categoryId ? categoryId.length % colors.length : 0
-      return colors[index]
-    }
-
-    const getCategoryName = (categoryId) => {
-      if (!categoryId) return 'Uncategorized'
-      const category = activeCategories.value.find(c => c.category_id === categoryId)
-      return category?.category_name || 'Unknown'
-    }
+    const getProductNameClass = (product) =>
+      product.status === 'inactive' ? 'text-tertiary-medium' : 'pc-name-active'
 
     const getStockDisplayClass = (product) => {
       const stock = getProductStock(product)
@@ -799,12 +625,14 @@ export default {
       return 'text-success'
     }
 
-    const getStatusBadgeClass = (status) => {
-      return status === 'active' ? 'badge bg-success text-white' : 'badge bg-secondary text-white'
-    }
+    const getStatusBadgeClass = (status) =>
+      status === 'active' ? 'badge bg-success text-white' : 'badge bg-secondary text-white'
 
-    const getStatusText = (status) => {
-      return status === 'active' ? 'Active' : 'Inactive'
+    const getStatusText = (status) => status === 'active' ? 'Active' : 'Inactive'
+
+    const calculateMargin = (cost, selling) => {
+      if (!cost || !selling || cost >= selling) return 0
+      return Math.round(((selling - cost) / selling) * 100)
     }
 
     const getMarginClass = (cost, selling) => {
@@ -814,14 +642,7 @@ export default {
       return 'text-error'
     }
 
-    const calculateMargin = (cost, selling) => {
-      if (!cost || !selling || cost >= selling) return 0
-      return Math.round(((selling - cost) / selling) * 100)
-    }
-
-    const formatPrice = (price) => {
-      return parseFloat(price || 0).toFixed(2)
-    }
+    const formatPrice = (price) => parseFloat(price || 0).toFixed(2)
 
     const toggleProductStatus = async (product) => {
       try {
@@ -836,15 +657,12 @@ export default {
       try {
         const timestamp = Date.now().toString()
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-        const newBarcode = `${timestamp}${random}`
-
-        await updateProduct(product.product_id, { barcode: newBarcode })
+        await updateProduct(product.product_id, { barcode: `${timestamp}${random}` })
       } catch (error) {
         console.error('Error generating barcode:', error)
       }
     }
 
-    // Sorting handlers
     const handleSort = (column) => {
       if (sortColumn.value === column) {
         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
@@ -860,20 +678,16 @@ export default {
       return sortDirection.value === 'asc' ? 'sort-icon--asc' : 'sort-icon--desc'
     }
 
-    // Click outside handler
     const handleClickOutside = (event) => {
       if (addDropdown.value && !addDropdown.value.contains(event.target)) {
         showAddDropdown.value = false
       }
     }
 
-    // Initialize on mount
     onMounted(async () => {
       document.addEventListener('click', handleClickOutside)
-      await Promise.all([
-        initializeProducts(),
-        initializeCategories()
-      ])
+      await initializeProducts()
+      initLooseBottles()
       calculateExpiringCount()
     })
 
@@ -882,7 +696,6 @@ export default {
     })
 
     return {
-      // Composable state and methods
       products,
       filteredProducts,
       productStats,
@@ -893,35 +706,34 @@ export default {
       deleteLoading,
       bulkDeleteLoading,
       exportLoading,
-      activeCategories,
-      totalActiveCategories,
-      categoriesLoading,
-      
-      // Local state
+
       searchMode,
       showAddDropdown,
-      showColumnFilter,
       selectedProductIds,
       selectedProducts,
       currentPage,
       itemsPerPage,
       expiringCount,
-      visibleColumns,
       addDropdown,
       searchInput,
       sortColumn,
       sortDirection,
+      currentSortKey,
 
-      // Computed
+      looseBottles,
+      totalLooseBottles,
+      incrementLoose,
+      decrementLoose,
+
       paginatedProducts,
+      totalPages,
+      paginationInfo,
       allSelected,
       someSelected,
-      
-      // Helper functions
+
       getProductStock,
       getProductCostPrice,
 
-      // Event handlers
       handleRefresh,
       handleCategoryFilter,
       handleStockFilter,
@@ -939,16 +751,12 @@ export default {
       toggleSearchMode,
       toggleAddDropdown,
       closeAddDropdown,
-      toggleColumnFilter,
       handleSort,
       getSortIconClass,
+      handleSortChange,
 
-      // Utility functions
-      isColumnVisible,
-      getRowClass,
+      getCardClass,
       getProductNameClass,
-      getCategoryBadgeClass,
-      getCategoryName,
       getStockDisplayClass,
       getStatusBadgeClass,
       getStatusText,
@@ -961,34 +769,28 @@ export default {
   },
 
   methods: {
-    // Modal methods
     showAddProductModal() {
       this.$refs.addProductModal?.openAdd?.()
     },
-    
+
     editProduct(product) {
-      const enrichedProduct = {
-        ...product,
-        category_id: product.category_id || ''
-      }
-      
+      const enrichedProduct = { ...product, category_id: product.category_id || '' }
       this.$refs.viewProductModal?.close?.()
       this.$refs.addProductModal?.openEdit?.(enrichedProduct)
     },
-    
+
     viewProduct(product) {
       if (!product || !product.product_id) {
         console.error('Cannot view product: missing ID')
         return
       }
-
       try {
         this.$router.push(`/products/${product.product_id}`)
       } catch (error) {
         console.error('Navigation error:', error)
       }
     },
-        
+
     restockProduct(product) {
       this.$refs.stockUpdateModal?.openStock?.(product)
     },
@@ -1003,10 +805,9 @@ export default {
       event?.stopPropagation()
       this.closeAddDropdown()
     },
-    
+
     handleImport(event) {
       event?.stopPropagation()
-      
       const importModalElement = document.getElementById('importModal')
       if (importModalElement) {
         try {
@@ -1016,29 +817,19 @@ export default {
           console.error('Error showing modal:', error)
         }
       }
-      
       this.closeAddDropdown()
     },
 
-    handleProductSuccess(result) {
+    handleProductSuccess() {
       this.handleRefresh()
     },
 
-    handleStockUpdateSuccess(result) {
-      // Stock updated successfully
-    },
+    handleStockUpdateSuccess() {},
 
-    handleImportSuccess(result) {
-      // Import completed
-    },
+    handleImportSuccess() {},
 
     handleImportError(error) {
       console.error(`Import failed: ${error.message || 'An unexpected error occurred'}`)
-    },
-
-    handleColumnChanges(newColumns) {
-      this.visibleColumns = { ...newColumns }
-      this.showColumnFilter = false
     }
   }
 }
@@ -1092,14 +883,8 @@ export default {
 }
 
 @keyframes dropdownSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .dropdown-item {
@@ -1115,17 +900,10 @@ export default {
   text-align: left;
 }
 
-.dropdown-item:last-child {
-  border-bottom: none;
-}
+.dropdown-item:last-child { border-bottom: none; }
+.dropdown-item:hover { background-color: var(--state-hover); }
 
-.dropdown-item:hover {
-  background-color: var(--state-hover);
-}
-
-.filter-dropdown {
-  min-width: 120px;
-}
+.filter-dropdown { min-width: 120px; }
 
 .filter-label {
   font-size: 0.75rem;
@@ -1134,9 +912,7 @@ export default {
   display: block;
 }
 
-.search-container {
-  min-width: 300px;
-}
+.search-container { min-width: 300px; }
 
 .search-input {
   padding-right: 2.5rem;
@@ -1157,14 +933,206 @@ export default {
   color: var(--text-accent) !important;
 }
 
-.table-wrapper {
-  position: relative;
-  z-index: 1;
+/* Grid control bar */
+.grid-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
 }
 
-.table-wrapper :deep(.table-container) {
+/* Product card grid */
+.product-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .product-cards-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 1200px) {
+  .product-cards-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Product card */
+.product-card {
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-primary);
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: box-shadow 0.15s ease;
   position: relative;
-  z-index: 1;
+  overflow: hidden;
+}
+
+.product-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-card.pc-low-stock::after {
+  content: 'LOW';
+  position: absolute;
+  top: 13px;
+  right: -22px;
+  width: 84px;
+  background: #f59e0b;
+  color: #fff;
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 3px 0;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.product-card.pc-out-of-stock::after {
+  content: 'OUT';
+  position: absolute;
+  top: 13px;
+  right: -22px;
+  width: 84px;
+  background: #ef4444;
+  color: #fff;
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 3px 0;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.product-card.pc-out-of-stock {
+  opacity: 0.85;
+}
+
+/* Card sections */
+.pc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pc-name {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 0.25rem;
+  letter-spacing: -0.01em;
+  min-height: 3.1rem;
+  padding-bottom: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pc-name-active {
+  color: var(--text-primary);
+}
+
+/* Stock row */
+.pc-stock-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary);
+  margin-top: 0.125rem;
+}
+
+.pc-stock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.pc-stock-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pc-stock-label {
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.15rem;
+}
+
+.pc-stock-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border-primary);
+  flex-shrink: 0;
+}
+
+/* Loose bottles */
+.pc-loose-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pc-loose-label {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.pc-loose-count {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Pricing */
+.pc-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pc-price {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pc-margin {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  background: var(--surface-tertiary);
+}
+
+/* Actions */
+.pc-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--border-primary);
+}
+
+.pc-action-btn {
+  flex: 1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: 0.3rem !important;
+}
+
+/* Pagination */
+.product-grid-pagination {
+  padding: 0.5rem 0;
 }
 
 @media (max-width: 768px) {
@@ -1172,72 +1140,23 @@ export default {
     flex-direction: column;
     align-items: stretch;
   }
-  
-  .search-container {
-    min-width: 100%;
-  }
-  
+
+  .search-container { min-width: 100%; }
+
   .add-dropdown-menu {
     min-width: 250px;
     right: 0;
     left: auto;
   }
-  
-  .dropdown-item {
-    padding: 0.875rem 1rem;
+
+  .dropdown-item { padding: 0.875rem 1rem; }
+
+  .grid-control-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
+
+  .product-cards-grid { grid-template-columns: 1fr; }
 }
-
-/* Sortable column headers */
-.sortable-header {
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.sortable-header:hover {
-  background-color: var(--state-hover);
-}
-
-.header-content {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.sort-icon {
-  font-size: 0.75rem;
-  line-height: 1;
-  transition: color 0.15s ease;
-}
-
-.sort-icon--idle .sort-idle {
-  opacity: 0.3;
-}
-
-.sort-icon--asc,
-.sort-icon--desc {
-  color: var(--text-accent, #0d6efd);
-}
-
-/* Make search button + filters perfectly aligned */
-.filters-row,
-.search-container,
-.filter-group {
-  display: flex;
-  align-items: center !important; /* forces vertical alignment */
-}
-
-/* Ensure search button container does not stretch */
-.search-container {
-  min-width: unset !important;
-  width: auto !important;
-}
-
-/* Optional: small spacing cleanup */
-.filters-row {
-  gap: 1rem;
-}
-
-
 </style>
