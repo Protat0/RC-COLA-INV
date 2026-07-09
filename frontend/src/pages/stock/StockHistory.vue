@@ -21,6 +21,15 @@
       </div>
     </div>
 
+    <!-- Load-error banner -->
+    <div
+      v-else-if="error"
+      class="surface-card border-theme rounded p-3 mb-3"
+      style="border-color: var(--status-error); color: var(--status-error);"
+    >
+      {{ error }}
+    </div>
+
     <!-- Empty state -->
     <div
       v-else-if="history.length === 0"
@@ -162,6 +171,5 @@ export default {
     }
   },
 
-  methods: {}
 }
 </script>

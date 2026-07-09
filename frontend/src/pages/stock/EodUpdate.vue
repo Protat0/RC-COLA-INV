@@ -280,10 +280,6 @@ export default {
       handleSubmit,
       startNew,
     }
-  },
-
-  methods: {
-    // $router is available via Options API — no need to inject in setup
   }
 }
 </script>

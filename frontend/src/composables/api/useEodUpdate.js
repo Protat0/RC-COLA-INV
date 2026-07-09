@@ -2,6 +2,11 @@ import { ref, computed } from 'vue'
 import { api } from '@/services/api.js'
 import { useProducts } from './useProducts.js'
 
+// State (entries, submitted, lastSubmission, history, error) is scoped per
+// component instance — each useEodUpdate() call produces fresh refs.
+// Cross-route continuity for submitted EOD entries relies on the mock
+// interceptor mutating MOCK_EOD_HISTORY in place, which StockHistory.vue
+// re-reads on mount via fetchHistory().
 export function useEodUpdate() {
   const { products, loading: productsLoading, initializeProducts } = useProducts()
 
