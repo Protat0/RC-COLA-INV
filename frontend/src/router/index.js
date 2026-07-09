@@ -24,6 +24,8 @@ import TesterPage from '@/pages/TesterPage.vue'
 import Suppliers from '@/pages/suppliers/Suppliers.vue'
 import SupplierDetails from '@/pages/suppliers/SupplierDetails.vue'
 import OrdersHistory from '@/pages/suppliers/OrdersHistory.vue'
+import EodUpdate from '@/pages/stock/EodUpdate.vue'
+import StockHistory from '@/pages/stock/StockHistory.vue'
 
 // Debug components (only for development)
 import ToastDebug from '@/pages/ToastDebug.vue'
@@ -179,6 +181,19 @@ const router = createRouter({
               { name: 'Details', path: null }
             ]
           }
+        },
+        // Stock routes
+        {
+          path: 'stock/eod',
+          name: 'EodUpdate',
+          component: EodUpdate,
+          meta: { title: 'EOD Stock Update' }
+        },
+        {
+          path: 'stock/history',
+          name: 'StockHistory',
+          component: StockHistory,
+          meta: { title: 'Stock Update History' }
         },
         // Reports
         {
