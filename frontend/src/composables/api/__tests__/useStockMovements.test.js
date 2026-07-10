@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
+import { vi } from 'vitest'
 
 vi.mock('@/services/api.js', () => ({
   api: { get: vi.fn() },
