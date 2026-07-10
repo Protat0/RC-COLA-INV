@@ -114,6 +114,9 @@ function getPostHandler(config) {
       const body = JSON.parse(cfg.data || '{}')
       const items = body.items ?? []
       const entryDate = body.entry_date
+      if (!entryDate) {
+        return Promise.reject(new Error('entry_date is required'))
+      }
       const created_at = new Date().toISOString()
       const movements = []
       const back_order_changes = []
