@@ -1,37 +1,56 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
 
-const MOCK_HISTORY = [
-  {
-    eod_id: 'eod_001',
-    entry_date: '2026-07-07',
-    created_at: '2026-07-07T18:15:00.000Z',
-    items: [
-      { product_id: 'prod_001', product_name: 'RC Cola 330mL', cases_sold: 15, loose_bottles: 3, stock_before: 465, stock_after: 450, needs_reconciliation: false },
-    ],
-    status: 'applied',
-  },
-  {
-    eod_id: 'eod_002',
-    entry_date: '2026-07-05',
-    created_at: '2026-07-05T19:00:00.000Z',
-    items: [
-      { product_id: 'prod_005', product_name: 'RC Cola 2L PET', cases_sold: 68, loose_bottles: 2, stock_before: 60, stock_after: -8, needs_reconciliation: true },
-    ],
-    status: 'flagged',
-  },
+const MOCK_MOVEMENTS = [
+  { movement_id: 'mv_1', product_id: 'prod_a', date: '2026-07-05', type: 'in',  quantity: 10, note: null, created_at: '2026-07-05T09:00:00.000Z' },
+  { movement_id: 'mv_2', product_id: 'prod_a', date: '2026-07-05', type: 'out', quantity: 3,  note: null, created_at: '2026-07-05T17:00:00.000Z' },
+  { movement_id: 'mv_3', product_id: 'prod_b', date: '2026-07-06', type: 'out', quantity: 2,  note: null, created_at: '2026-07-06T17:00:00.000Z' },
 ]
 
-const mockComposable = {
-  history: ref(MOCK_HISTORY),
-  historyLoading: ref(false),
+const mockMovementsComposable = {
+  movements: ref(MOCK_MOVEMENTS),
+  loading: ref(false),
   error: ref(null),
-  fetchHistory: vi.fn().mockResolvedValue(undefined),
+  fetchMovements: vi.fn().mockResolvedValue(undefined),
+  groupByProductAndDate: vi.fn((mvs, dates, products) => {
+    const map = new Map()
+    products.forEach(p => {
+      const inner = new Map()
+      dates.forEach(d => inner.set(d, { in: 0, out: 0, adjustment: 0, net: 0 }))
+      map.set(p.product_id, inner)
+    })
+    mvs.forEach(m => {
+      const perProduct = map.get(m.product_id)
+      if (!perProduct) return
+      const cell = perProduct.get(m.date)
+      if (!cell) return
+      if (m.type === 'in')  { cell.in += m.quantity;  cell.net += m.quantity }
+      if (m.type === 'out') { cell.out += m.quantity; cell.net -= m.quantity }
+    })
+    return map
+  }),
+  computeRunningBalance: vi.fn(() => new Map([['2026-07-05', 7], ['2026-07-06', 5]])),
+  computeDailyTotals: vi.fn(() => new Map([
+    ['2026-07-05', { in: 10, out: 3, net: 7 }],
+    ['2026-07-06', { in: 0, out: 2, net: -2 }],
+  ])),
 }
 
-vi.mock('@/composables/api/useEodUpdate.js', () => ({
-  useEodUpdate: () => mockComposable,
+const mockProductsComposable = {
+  products: ref([
+    { product_id: 'prod_a', product_name: 'RC Cola Mega', flavor: 'RC Cola', pack_size: 'Mega', total_stock: 5, back_order: 0, status: 'active' },
+    { product_id: 'prod_b', product_name: 'Lemon 240mL', flavor: 'Lemon', pack_size: '240mL',   total_stock: 3, back_order: 1, status: 'active' },
+  ]),
+  loading: ref(false),
+  initializeProducts: vi.fn().mockResolvedValue(undefined),
+}
+
+vi.mock('@/composables/api/useStockMovements.js', () => ({
+  useStockMovements: () => mockMovementsComposable,
+}))
+vi.mock('@/composables/api/useProducts.js', () => ({
+  useProducts: () => mockProductsComposable,
 }))
 
 import StockHistory from '../StockHistory.vue'
@@ -39,29 +58,41 @@ import StockHistory from '../StockHistory.vue'
 describe('StockHistory.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockComposable.history.value = MOCK_HISTORY
-    mockComposable.historyLoading.value = false
+    mockMovementsComposable.movements.value = MOCK_MOVEMENTS
   })
 
-  it('renders a row for each history entry', () => {
+  it('renders a row per active product in the matrix', () => {
     const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
-    expect(wrapper.findAll('[data-testid="history-entry"]')).toHaveLength(2)
+    expect(wrapper.findAll('[data-testid="matrix-row"]')).toHaveLength(2)
   })
 
-  it('shows flagged badge for entries with status flagged', () => {
+  it('renders a date column per day in the range', () => {
     const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
-    const badges = wrapper.findAll('[data-testid="flagged-badge"]')
-    expect(badges).toHaveLength(1)
+    // Default range = 14 days
+    const dateHeaders = wrapper.findAll('[data-testid="date-header"]')
+    expect(dateHeaders.length).toBe(14)
   })
 
-  it('shows empty state when history is empty', () => {
-    mockComposable.history.value = []
+  it('renders the aggregate footer row', () => {
+    const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
+    expect(wrapper.find('[data-testid="aggregate-footer"]').exists()).toBe(true)
+  })
+
+  it('shows empty state when no movements load', async () => {
+    mockMovementsComposable.movements.value = []
     const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
     expect(wrapper.find('[data-testid="empty-state"]').exists()).toBe(true)
   })
 
-  it('calls fetchHistory on mount', () => {
+  it('calls fetchMovements on mount', async () => {
     shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
-    expect(mockComposable.fetchHistory).toHaveBeenCalledOnce()
+    expect(mockMovementsComposable.fetchMovements).toHaveBeenCalled()
+  })
+
+  it('shows load-error banner when error is set', async () => {
+    mockMovementsComposable.error.value = 'Network Error'
+    const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
+    expect(wrapper.find('[data-testid="error-banner"]').exists()).toBe(true)
+    mockMovementsComposable.error.value = null
   })
 })
