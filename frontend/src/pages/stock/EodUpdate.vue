@@ -34,6 +34,15 @@
         />
       </div>
 
+      <!-- Submit error banner -->
+      <div
+        v-if="error"
+        class="surface-card border-theme rounded p-3 mb-3"
+        style="border-color: var(--status-error); color: var(--status-error);"
+      >
+        {{ error }}
+      </div>
+
       <!-- Reconciliation warning banner (preview only) -->
       <div
         v-if="step === 'preview' && flaggedItems.length > 0"
