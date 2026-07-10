@@ -4,11 +4,10 @@
 import { api } from './api.js'
 import {
   MOCK_PRODUCTS,
-  MOCK_CATEGORIES,
   MOCK_SALES_BY_ITEM,
   MOCK_MONTHLY_DATA,
   MOCK_TRANSACTIONS,
-  MOCK_EOD_HISTORY,
+  MOCK_STOCK_MOVEMENTS,
 } from '../data/mockData.js'
 
 function mockAdapter(data, status = 200) {
@@ -23,7 +22,28 @@ function mockAdapter(data, status = 200) {
     })
 }
 
+function parseQuery(url) {
+  const qIdx = url.indexOf('?')
+  if (qIdx === -1) return {}
+  const params = {}
+  url.slice(qIdx + 1).split('&').forEach(pair => {
+    const [k, v] = pair.split('=')
+    if (k) params[decodeURIComponent(k)] = v ? decodeURIComponent(v) : ''
+  })
+  return params
+}
+
 function getHandler(url) {
+  // Stock movements list (filterable)
+  if (url.includes('/stock/movements/')) {
+    const q = parseQuery(url)
+    let rows = MOCK_STOCK_MOVEMENTS.slice()
+    if (q.product_id) rows = rows.filter(m => m.product_id === q.product_id)
+    if (q.date_from) rows = rows.filter(m => m.date >= q.date_from)
+    if (q.date_to)   rows = rows.filter(m => m.date <= q.date_to)
+    return mockAdapter({ success: true, data: rows })
+  }
+
   // Products list
   if (/\/products\/?(\?.*)?$/.test(url)) {
     return mockAdapter({
@@ -40,12 +60,7 @@ function getHandler(url) {
     return mockAdapter({ data: product || null })
   }
 
-  // Categories (list, subcategories, active, etc.)
-  if (url.includes('/categories/')) {
-    return mockAdapter({ data: MOCK_CATEGORIES })
-  }
-
-  // Sales by item — used for Total Units Sold and Total Profit KPIs
+  // Sales by item
   if (url.includes('sales-display/by-item/') || url.includes('sales-display/pos-item-summary/')) {
     return mockAdapter(MOCK_SALES_BY_ITEM)
   }
@@ -61,22 +76,22 @@ function getHandler(url) {
     })
   }
 
-  // Monthly sales by period — used for Top Performing Month
+  // Monthly sales
   if (url.includes('sales-report/by-period/')) {
     return mockAdapter({ data: MOCK_MONTHLY_DATA })
   }
 
-  // Recent sales transactions — Dashboard transaction feed
+  // Recent sales
   if (url.includes('/sales/recent/')) {
     return mockAdapter({ success: true, data: MOCK_TRANSACTIONS })
   }
 
-  // Invoices / sales stats fallback
+  // Invoices / sales fallback
   if (url.includes('/invoices/') || url.includes('/sales/') || url.includes('sales-display/')) {
     return mockAdapter({ data: [], success: true, total_transactions: 0 })
   }
 
-  // Products stats / low-stock / deleted
+  // Products stats fallback
   if (url.includes('/products/')) {
     return mockAdapter({ data: [] })
   }
@@ -86,14 +101,10 @@ function getHandler(url) {
     return mockAdapter({ data: [] })
   }
 
-  // EOD Stock History
-  if (url.includes('/stock/eod/history/')) {
-    return mockAdapter({ success: true, data: MOCK_EOD_HISTORY })
-  }
-
-  // Everything else — silent empty success so no error toasts fire
   return mockAdapter({ data: [], success: true })
 }
+
+let movementCounter = MOCK_STOCK_MOVEMENTS.length
 
 function getPostHandler(config) {
   const url = config.url || ''
@@ -102,23 +113,77 @@ function getPostHandler(config) {
     return (cfg) => {
       const body = JSON.parse(cfg.data || '{}')
       const items = body.items ?? []
+      const entryDate = body.entry_date
+      const created_at = new Date().toISOString()
+      const movements = []
+      const back_order_changes = []
+      let flagged = false
+
       items.forEach(item => {
         const product = MOCK_PRODUCTS.find(p => p.product_id === item.product_id)
-        if (product) {
-          product.total_stock = item.stock_after
-          product.loose_bottles = item.loose_bottles
+        if (!product) return
+
+        const casesIn = Number(item.cases_in) || 0
+        const casesOut = Number(item.cases_out) || 0
+        const boDelta = Number(item.bo_delta) || 0
+
+        if (casesIn > 0) {
+          movementCounter += 1
+          const mv = {
+            movement_id: `mv_${Date.now()}_${movementCounter}`,
+            product_id: item.product_id,
+            date: entryDate,
+            type: 'in',
+            quantity: casesIn,
+            note: item.note ?? null,
+            created_at,
+          }
+          MOCK_STOCK_MOVEMENTS.push(mv)
+          movements.push(mv)
+          product.total_stock += casesIn
+        }
+
+        if (casesOut > 0) {
+          movementCounter += 1
+          const mv = {
+            movement_id: `mv_${Date.now()}_${movementCounter}`,
+            product_id: item.product_id,
+            date: entryDate,
+            type: 'out',
+            quantity: casesOut,
+            note: item.note ?? null,
+            created_at,
+          }
+          MOCK_STOCK_MOVEMENTS.push(mv)
+          movements.push(mv)
+          product.total_stock -= casesOut
+          if (product.total_stock < 0) flagged = true
+        }
+
+        if (boDelta !== 0) {
+          const oldBo = product.back_order
+          product.back_order = Math.max(0, product.back_order + boDelta)
+          back_order_changes.push({
+            product_id: item.product_id,
+            old_bo: oldBo,
+            new_bo: product.back_order,
+            delta: boDelta,
+          })
         }
       })
-      const newEntry = {
-        eod_id: `eod_${Date.now()}`,
-        entry_date: body.entry_date,
-        created_at: new Date().toISOString(),
-        items: items,
-        status: items.some(i => i.needs_reconciliation) ? 'flagged' : 'applied',
-      }
-      MOCK_EOD_HISTORY.unshift(newEntry)
+
       return Promise.resolve({
-        data: { success: true, data: newEntry },
+        data: {
+          success: true,
+          data: {
+            eod_id: `eod_${Date.now()}`,
+            entry_date: entryDate,
+            created_at,
+            movements,
+            back_order_changes,
+            status: flagged ? 'flagged' : 'applied',
+          },
+        },
         status: 200,
         statusText: 'OK',
         headers: { 'content-type': 'application/json' },
