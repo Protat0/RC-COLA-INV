@@ -12,7 +12,7 @@
         <CardTemplate size="xs" border-color="success" border-position="start" title="Total" :value="productStats.total" subtitle="Products" />
       </div>
       <div class="col-6 col-md-3 mb-2">
-        <CardTemplate size="xs" border-color="warning" border-position="start" title="Loose Bottles" :value="totalLooseBottles" subtitle="Total across products" />
+        <CardTemplate size="xs" border-color="warning" border-position="start" title="Back Ordered" :value="totalBackOrdered" subtitle="Cases owed to customers" />
       </div>
     </div>
 
@@ -99,6 +99,16 @@
             </button>
             <template v-if="!searchMode">
               <div class="filter-dropdown">
+                <label class="filter-label text-tertiary-medium">Pack size</label>
+                <select
+                  class="form-select form-select-sm input-theme"
+                  v-model="packSizeFilter"
+                >
+                  <option value="">All sizes</option>
+                  <option v-for="size in packSizes" :key="size" :value="size">{{ size }}</option>
+                </select>
+              </div>
+              <div class="filter-dropdown">
                 <label class="filter-label text-tertiary-medium">Stock alert</label>
                 <select
                   class="form-select form-select-sm input-theme"
@@ -139,7 +149,7 @@
     <div class="table-wrapper">
       <DataTable
         v-if="!loading || hasProducts"
-        :total-items="filteredProducts.length"
+        :total-items="packFilteredProducts.length"
         :current-page="currentPage"
         :items-per-page="itemsPerPage"
         @page-changed="handlePageChange"
@@ -176,7 +186,7 @@
               </span>
             </th>
             <th style="width: 90px; text-align: right;">Case size</th>
-            <th style="width: 110px; text-align: right;">Loose btls</th>
+            <th style="width: 110px; text-align: right;">Back Order</th>
             <th style="width: 130px; text-align: right;" class="sortable-header" @click="handleSort('sellingPrice')">
               <span class="header-content justify-content-end">
                 Price
@@ -221,8 +231,8 @@
               {{ product.case_size ?? '—' }}
             </td>
             <td class="text-end">
-              <span :class="(looseBottles[product.product_id] ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
-                {{ looseBottles[product.product_id] ?? 0 }}
+              <span :class="(product.back_order ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
+                {{ product.back_order ?? 0 }}
               </span>
             </td>
             <td class="text-end fw-medium text-secondary">
@@ -393,30 +403,33 @@ export default {
     const addDropdown = ref(null)
     const searchInput = ref(null)
 
-    const looseBottles = ref({})
+    const totalBackOrdered = computed(() =>
+      products.value.reduce((sum, p) => sum + (p.back_order || 0), 0)
+    )
 
-    const initLooseBottles = () => {
-      const map = {}
-      products.value.forEach(p => {
-        map[p.product_id] = p.loose_bottles ?? 0
-      })
-      looseBottles.value = map
-    }
-
-    const totalLooseBottles = computed(() => {
-      return Object.values(looseBottles.value).reduce((sum, n) => sum + n, 0)
+    const packSizeFilter = ref('')
+    const packSizes = computed(() => {
+      const set = new Set()
+      products.value.forEach(p => { if (p.pack_size) set.add(p.pack_size) })
+      return Array.from(set).sort()
     })
 
     const sortColumn = ref('name')
     const sortDirection = ref('asc')
 
+    const packFilteredProducts = computed(() =>
+      packSizeFilter.value
+        ? filteredProducts.value.filter(p => p.pack_size === packSizeFilter.value)
+        : filteredProducts.value
+    )
+
     const sortedFilteredProducts = computed(() => {
-      if (!sortColumn.value || !sortDirection.value) return filteredProducts.value
+      if (!sortColumn.value || !sortDirection.value) return packFilteredProducts.value
 
       const col = sortColumn.value
       const dir = sortDirection.value
 
-      return [...filteredProducts.value].sort((a, b) => {
+      return [...packFilteredProducts.value].sort((a, b) => {
         let aVal, bVal
 
         if (col === 'name') {
@@ -668,7 +681,6 @@ export default {
     onMounted(async () => {
       document.addEventListener('click', handleClickOutside)
       await initializeProducts()
-      initLooseBottles()
       calculateExpiringCount()
     })
 
@@ -700,8 +712,10 @@ export default {
       sortColumn,
       sortDirection,
 
-      looseBottles,
-      totalLooseBottles,
+      totalBackOrdered,
+      packSizeFilter,
+      packSizes,
+      packFilteredProducts,
 
       paginatedProducts,
       allSelected,
