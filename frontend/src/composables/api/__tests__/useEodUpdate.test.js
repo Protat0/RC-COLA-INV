@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { ref } from 'vue'
+import { api } from '@/services/api.js'
 
 vi.mock('@/services/api.js', () => ({
   api: { get: vi.fn(), post: vi.fn() },
@@ -57,7 +58,13 @@ describe('useEodUpdate', () => {
     const { entries, changedItems, initEntries } = useEodUpdate()
     initEntries()
     entries.value['prod_a'].cases_out = 10
-    expect(changedItems.value[0].stock_after).toBe(90)
+    expect(changedItems.value[0]).toMatchObject({
+      product_id: 'prod_a',
+      cases_out: 10,
+      stock_before: 100,
+      stock_after: 90,
+      needs_reconciliation: false,
+    })
   })
 
   it('changedItems includes product when bo_delta != 0 even if stock unchanged', () => {
@@ -100,5 +107,72 @@ describe('useEodUpdate', () => {
     expect(hasChanges.value).toBe(false)
     entries.value['prod_b'].cases_in = 5
     expect(hasChanges.value).toBe(true)
+  })
+
+  describe('submitEod', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('success path: posts correct payload, sets submitted and lastSubmission, clears error', async () => {
+      const mockResponseData = { id: 1, entry_date: '2026-07-10', items: [] }
+      api.post.mockResolvedValue({ data: { data: mockResponseData } })
+
+      const { entries, submitted, lastSubmission, error, submitEod, initEntries } = useEodUpdate()
+      initEntries()
+      entries.value['prod_a'].cases_in = 5
+
+      await submitEod('2026-07-10')
+
+      expect(api.post).toHaveBeenCalledWith('/stock/eod/', {
+        entry_date: '2026-07-10',
+        items: [
+          { product_id: 'prod_a', cases_in: 5, cases_out: 0, bo_delta: 0 },
+        ],
+      })
+      expect(submitted.value).toBe(true)
+      expect(lastSubmission.value).toEqual(mockResponseData)
+      expect(error.value).toBeNull()
+    })
+
+    it('error path: api.post rejects, sets error, submitted stays false, lastSubmission stays null', async () => {
+      api.post.mockRejectedValue(new Error('Network error'))
+
+      const { submitted, lastSubmission, error, submitEod, initEntries } = useEodUpdate()
+      initEntries()
+
+      await expect(submitEod('2026-07-10')).rejects.toThrow('Network error')
+
+      expect(submitted.value).toBe(false)
+      expect(lastSubmission.value).toBeNull()
+      expect(error.value).not.toBeNull()
+    })
+
+    it('empty entries path: submitEod sends items: [] when no non-zero entries', async () => {
+      api.post.mockResolvedValue({ data: { data: {} } })
+
+      const { submitEod, initEntries } = useEodUpdate()
+      initEntries()
+
+      await submitEod('2026-07-10')
+
+      expect(api.post).toHaveBeenCalledWith('/stock/eod/', {
+        entry_date: '2026-07-10',
+        items: [],
+      })
+    })
+  })
+
+  it('per-instance state isolation: mutating a does not affect b', () => {
+    const a = useEodUpdate()
+    const b = useEodUpdate()
+    a.initEntries()
+    b.initEntries()
+
+    a.entries.value['prod_a'].cases_out = 5
+
+    expect(b.entries.value['prod_a'].cases_out).toBe(0)
+    expect(a.changedItems.value.length).toBe(1)
+    expect(b.changedItems.value.length).toBe(0)
   })
 })
