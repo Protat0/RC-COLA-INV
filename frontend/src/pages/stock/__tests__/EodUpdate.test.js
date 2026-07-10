@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
 
 const mockComposable = {
   activeProducts: ref([
-    { product_id: 'prod_001', product_name: 'RC Cola 330mL Can (Case/24)', total_stock: 100, loose_bottles: 5 },
-    { product_id: 'prod_002', product_name: 'RC Cola 500mL PET (Case/24)', total_stock: 50,  loose_bottles: 0 },
+    { product_id: 'prod_a', product_name: 'RC Cola Mega', flavor: 'RC Cola', pack_size: 'Mega', total_stock: 100, back_order: 0 },
+    { product_id: 'prod_b', product_name: 'Lemon 240mL', flavor: 'Lemon', pack_size: '240mL',   total_stock: 50,  back_order: 1 },
   ]),
   entries: ref({
-    prod_001: { cases_sold: 0, loose_bottles: 5 },
-    prod_002: { cases_sold: 0, loose_bottles: 0 },
+    prod_a: { cases_in: 0, cases_out: 0, bo_delta: 0 },
+    prod_b: { cases_in: 0, cases_out: 0, bo_delta: 0 },
   }),
   changedItems: ref([]),
   flaggedItems: ref([]),
@@ -38,6 +38,10 @@ describe('EodUpdate.vue', () => {
     mockComposable.hasChanges.value = false
     mockComposable.flaggedItems.value = []
     mockComposable.changedItems.value = []
+    mockComposable.entries.value = {
+      prod_a: { cases_in: 0, cases_out: 0, bo_delta: 0 },
+      prod_b: { cases_in: 0, cases_out: 0, bo_delta: 0 },
+    }
   })
 
   it('renders the page heading', () => {
@@ -45,24 +49,36 @@ describe('EodUpdate.vue', () => {
     expect(wrapper.text()).toContain('End of Day Stock Update')
   })
 
-  it('renders a row for each active product in entry step', () => {
+  it('starts with empty working set (sparse mode) and shows the picker', () => {
     const wrapper = shallowMount(EodUpdate, { global: { stubs: { Teleport: true } } })
-    expect(wrapper.findAll('[data-testid="product-row"]')).toHaveLength(2)
+    expect(wrapper.findAll('[data-testid="product-row"]')).toHaveLength(0)
+    expect(wrapper.find('[data-testid="product-picker"]').exists()).toBe(true)
   })
 
-  it('preview button is disabled when no changes', () => {
+  it('adding a product to the working set renders a product row with three inputs', async () => {
+    const wrapper = shallowMount(EodUpdate, { global: { stubs: { Teleport: true } } })
+    await wrapper.vm.addToWorkingSet('prod_a')
+    await wrapper.vm.$nextTick()
+    const rows = wrapper.findAll('[data-testid="product-row"]')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].find('[data-testid="input-cases-in"]').exists()).toBe(true)
+    expect(rows[0].find('[data-testid="input-cases-out"]').exists()).toBe(true)
+    expect(rows[0].find('[data-testid="input-bo-delta"]').exists()).toBe(true)
+  })
+
+  it('preview button disabled when hasChanges is false', () => {
     const wrapper = shallowMount(EodUpdate, { global: { stubs: { Teleport: true } } })
     const btn = wrapper.find('[data-testid="preview-btn"]')
     expect(btn.attributes('disabled')).toBeDefined()
   })
 
-  it('shows reconciliation warning banner when flaggedItems exist in preview step', async () => {
-    mockComposable.flaggedItems.value = [{ product_id: 'prod_001', product_name: 'RC Cola 330mL', cases_sold: 150, loose_bottles: 5, stock_before: 100, stock_after: -50, needs_reconciliation: true }]
+  it('shows reconciliation banner in preview when flaggedItems present', async () => {
+    mockComposable.flaggedItems.value = [
+      { product_id: 'prod_a', product_name: 'RC Cola Mega', cases_in: 0, cases_out: 150, bo_delta: 0, stock_before: 100, stock_after: -50, needs_reconciliation: true },
+    ]
     mockComposable.hasChanges.value = true
     mockComposable.changedItems.value = mockComposable.flaggedItems.value
     const wrapper = shallowMount(EodUpdate, { global: { stubs: { Teleport: true } } })
-    // Switch to preview step
-    // setData fails with Vue 3 setup() refs ("object is not extensible"), use direct vm assignment
     wrapper.vm.step = 'preview'
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-testid="recon-banner"]').exists()).toBe(true)
