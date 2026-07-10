@@ -4,9 +4,9 @@ import { useProducts } from './useProducts.js'
 
 // State (entries, submitted, lastSubmission, history, error) is scoped per
 // component instance — each useEodUpdate() call produces fresh refs.
-// Cross-route continuity for submitted EOD entries relies on the mock
-// interceptor mutating MOCK_EOD_HISTORY in place, which StockHistory.vue
-// re-reads on mount via fetchHistory().
+// Cross-route continuity relies on the mock interceptor mutating
+// MOCK_STOCK_MOVEMENTS in place, which StockHistory.vue re-reads on mount.
+
 export function useEodUpdate() {
   const { products, loading: productsLoading, initializeProducts } = useProducts()
 
@@ -15,8 +15,6 @@ export function useEodUpdate() {
   const error = ref(null)
   const submitted = ref(false)
   const lastSubmission = ref(null)
-  const history = ref([])
-  const historyLoading = ref(false)
 
   const activeProducts = computed(() =>
     products.value.filter(p => p.status === 'active')
@@ -25,10 +23,7 @@ export function useEodUpdate() {
   const initEntries = () => {
     const map = {}
     activeProducts.value.forEach(p => {
-      map[p.product_id] = {
-        cases_sold: 0,
-        loose_bottles: p.loose_bottles ?? 0,
-      }
+      map[p.product_id] = { cases_in: 0, cases_out: 0, bo_delta: 0 }
     })
     entries.value = map
   }
@@ -36,24 +31,24 @@ export function useEodUpdate() {
   const changedItems = computed(() =>
     activeProducts.value
       .map(p => {
-        const entry = entries.value[p.product_id] || { cases_sold: 0, loose_bottles: p.loose_bottles ?? 0 }
+        const entry = entries.value[p.product_id] || { cases_in: 0, cases_out: 0, bo_delta: 0 }
         const stock_before = p.total_stock ?? 0
-        const stock_after = stock_before - entry.cases_sold
-        const looseOriginal = p.loose_bottles ?? 0
-        const looseChanged = entry.loose_bottles !== looseOriginal
+        const stock_after = stock_before + entry.cases_in - entry.cases_out
+        const changed = entry.cases_in !== 0 || entry.cases_out !== 0 || entry.bo_delta !== 0
         return {
           product_id: p.product_id,
           product_name: p.product_name,
-          cases_sold: entry.cases_sold,
-          loose_bottles: entry.loose_bottles,
+          cases_in: entry.cases_in,
+          cases_out: entry.cases_out,
+          bo_delta: entry.bo_delta,
           stock_before,
           stock_after,
           needs_reconciliation: stock_after < 0,
-          _has_changes: entry.cases_sold > 0 || looseChanged,
+          _changed: changed,
         }
       })
-      .filter(item => item._has_changes)
-      .map(({ _has_changes, ...item }) => item)
+      .filter(item => item._changed)
+      .map(({ _changed, ...item }) => item)
   )
 
   const flaggedItems = computed(() =>
@@ -68,7 +63,12 @@ export function useEodUpdate() {
     try {
       const payload = {
         entry_date: entryDate,
-        items: changedItems.value,
+        items: changedItems.value.map(i => ({
+          product_id: i.product_id,
+          cases_in: i.cases_in,
+          cases_out: i.cases_out,
+          bo_delta: i.bo_delta,
+        })),
       }
       const response = await api.post('/stock/eod/', payload)
       lastSubmission.value = response.data.data
@@ -79,18 +79,6 @@ export function useEodUpdate() {
       throw err
     } finally {
       loading.value = false
-    }
-  }
-
-  const fetchHistory = async () => {
-    historyLoading.value = true
-    try {
-      const response = await api.get('/stock/eod/history/')
-      history.value = response.data.data || []
-    } catch (err) {
-      error.value = err.message || 'Failed to load history'
-    } finally {
-      historyLoading.value = false
     }
   }
 
@@ -110,15 +98,12 @@ export function useEodUpdate() {
     error,
     submitted,
     lastSubmission,
-    history,
-    historyLoading,
     changedItems,
     flaggedItems,
     hasChanges,
     initEntries,
     initializeProducts,
     submitEod,
-    fetchHistory,
     resetForm,
   }
 }
