@@ -131,26 +131,6 @@
               </router-link>
             </li>
             <li class="nav-subitem">
-              <router-link 
-                to="/categories" 
-                class="nav-sublink"
-                :class="{ 'active-sub': isActiveRoute('/categories') }"
-              >
-                <FolderOpen :size="16" class="nav-subicon" />
-                Categories
-              </router-link>
-            </li>
-            <li class="nav-subitem">
-              <router-link
-                to="/logs"
-                class="nav-sublink"
-                :class="{ 'active-sub': isActiveRoute('/logs') }"
-              >
-                <FileText :size="16" class="nav-subicon" />
-                Logs
-              </router-link>
-            </li>
-            <li class="nav-subitem">
               <router-link
                 to="/stock/eod"
                 class="nav-sublink"
@@ -327,13 +307,11 @@ import {
   PieChart,
   LogOut,
   Box,
-  FolderOpen,
-  FileText,
   ClipboardList,
   History
 } from 'lucide-vue-next'
 
-const inventoryRoutePrefixes = ['/inventory', '/products', '/categories', '/logs', '/stock']
+const inventoryRoutePrefixes = ['/inventory', '/products', '/stock']
 const reportsRoutePrefixes = ['/salesbyitem', '/salesbycategory', '/reports']
 
 export default {
@@ -355,8 +333,6 @@ export default {
     PieChart,
     LogOut,
     Box,
-    FolderOpen,
-    FileText,
     ClipboardList,
     History
   },

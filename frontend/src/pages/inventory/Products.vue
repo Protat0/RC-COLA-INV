@@ -135,128 +135,140 @@
       </div>
     </div>
 
-    <!-- Grid Control Bar: select-all + count + sort -->
-    <div
-      v-if="(!loading || hasProducts) && filteredProducts.length > 0"
-      class="grid-control-bar mb-2"
-    >
-      <div class="d-flex align-items-center gap-2">
-        <input
-          type="checkbox"
-          class="form-check-input"
-          @change="handleSelectAll"
-          :checked="allSelected"
-          :indeterminate.prop="someSelected"
-          title="Select all on this page"
-          style="cursor: pointer;"
-        />
-        <span class="text-tertiary-medium" style="font-size: 0.8rem;">
-          {{ filteredProducts.length }} product{{ filteredProducts.length !== 1 ? 's' : '' }}<span v-if="selectedProductIds.length > 0"> · {{ selectedProductIds.length }} selected</span>
-        </span>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <label class="text-tertiary-medium mb-0" style="font-size: 0.75rem; white-space: nowrap;">Sort</label>
-        <select
-          class="form-select form-select-sm input-theme"
-          style="width: auto;"
-          :value="currentSortKey"
-          @change="handleSortChange"
-        >
-          <option value="name-asc">Name (A–Z)</option>
-          <option value="name-desc">Name (Z–A)</option>
-          <option value="stock-desc">Stock (High–Low)</option>
-          <option value="stock-asc">Stock (Low–High)</option>
-          <option value="sellingPrice-asc">Price (Low–High)</option>
-          <option value="sellingPrice-desc">Price (High–Low)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Product Card Grid -->
-    <div v-if="!loading || hasProducts" class="product-cards-grid">
-      <div
-        v-for="product in paginatedProducts"
-        :key="product.product_id"
-        class="product-card surface-card"
-        :class="getCardClass(product)"
+    <!-- Data Table -->
+    <div class="table-wrapper">
+      <DataTable
+        v-if="!loading || hasProducts"
+        :total-items="filteredProducts.length"
+        :current-page="currentPage"
+        :items-per-page="itemsPerPage"
+        @page-changed="handlePageChange"
       >
-        <!-- Top row: checkbox -->
-        <div class="pc-top">
-          <input
-            type="checkbox"
-            class="form-check-input"
-            :value="product.product_id"
-            :checked="selectedProductIds.includes(product.product_id)"
-            @change="handleProductSelect(product.product_id, $event.target.checked)"
-            style="cursor: pointer;"
-          />
-        </div>
+        <template #header>
+          <tr>
+            <th style="width: 40px;">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                @change="handleSelectAll"
+                :checked="allSelected"
+                :indeterminate.prop="someSelected"
+              />
+            </th>
+            <th class="sortable-header" @click="handleSort('name')">
+              <span class="header-content">
+                Item name
+                <span class="sort-icon" :class="getSortIconClass('name')">
+                  <span v-if="sortColumn === 'name' && sortDirection === 'asc'">↑</span>
+                  <span v-else-if="sortColumn === 'name' && sortDirection === 'desc'">↓</span>
+                  <span v-else class="sort-idle">⇅</span>
+                </span>
+              </span>
+            </th>
+            <th style="width: 110px;" class="sortable-header" @click="handleSort('stock')">
+              <span class="header-content justify-content-end">
+                Stock (cases)
+                <span class="sort-icon" :class="getSortIconClass('stock')">
+                  <span v-if="sortColumn === 'stock' && sortDirection === 'asc'">↑</span>
+                  <span v-else-if="sortColumn === 'stock' && sortDirection === 'desc'">↓</span>
+                  <span v-else class="sort-idle">⇅</span>
+                </span>
+              </span>
+            </th>
+            <th style="width: 90px; text-align: right;">Case size</th>
+            <th style="width: 110px; text-align: right;">Loose btls</th>
+            <th style="width: 130px; text-align: right;" class="sortable-header" @click="handleSort('sellingPrice')">
+              <span class="header-content justify-content-end">
+                Price
+                <span class="sort-icon" :class="getSortIconClass('sellingPrice')">
+                  <span v-if="sortColumn === 'sellingPrice' && sortDirection === 'asc'">↑</span>
+                  <span v-else-if="sortColumn === 'sellingPrice' && sortDirection === 'desc'">↓</span>
+                  <span v-else class="sort-idle">⇅</span>
+                </span>
+              </span>
+            </th>
+            <th style="width: 80px; text-align: center;">Margin</th>
+            <th style="width: 180px; text-align: center;">Actions</th>
+          </tr>
+        </template>
 
-        <!-- Product name -->
-        <div class="pc-name" :class="getProductNameClass(product)">
-          {{ product.product_name }}
-        </div>
-
-        <!-- Stock + Case size -->
-        <div class="pc-stock-row">
-          <div class="pc-stock-item">
-            <span class="pc-stock-value" :class="getStockDisplayClass(product)">
-              {{ getProductStock(product) }}
-            </span>
-            <span class="pc-stock-label">cases</span>
-          </div>
-          <div class="pc-stock-divider"></div>
-          <div class="pc-stock-item">
-            <span class="pc-stock-value" style="color: var(--text-secondary);">
-              {{ product.case_size ?? '—' }}
-            </span>
-            <span class="pc-stock-label">per case</span>
-          </div>
-        </div>
-
-        <!-- Loose bottles -->
-        <div class="pc-loose-row">
-          <span class="pc-loose-label">Loose bottles</span>
-          <span
-            class="pc-loose-count"
-            :class="(looseBottles[product.product_id] ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'"
-          >{{ looseBottles[product.product_id] ?? 0 }}</span>
-        </div>
-
-        <!-- Pricing row -->
-        <div class="pc-price-row">
-          <span class="pc-price">₱{{ formatPrice(product.selling_price || product.price) }}</span>
-          <span
-            class="pc-margin"
-            :class="getMarginClass(getProductCostPrice(product), product.selling_price || product.price)"
+        <template #body>
+          <tr
+            v-for="product in paginatedProducts"
+            :key="product.product_id"
+            :class="getRowClass(product)"
           >
-            {{ calculateMargin(getProductCostPrice(product), product.selling_price || product.price) }}%
-          </span>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="pc-actions">
-          <button class="btn btn-filter btn-sm pc-action-btn" @click="viewProduct(product)">View</button>
-          <button class="btn btn-add btn-sm pc-action-btn" @click="restockProduct(product)">Update Stock</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pagination -->
-    <div
-      v-if="(!loading || hasProducts) && totalPages > 1"
-      class="product-grid-pagination mt-3 d-flex justify-content-between align-items-center"
-    >
-      <span class="text-tertiary-medium" style="font-size: 0.8rem;">{{ paginationInfo }}</span>
-      <div class="d-flex gap-1">
-        <button class="btn btn-sm btn-filter" @click="handlePageChange(1)" :disabled="currentPage === 1">«</button>
-        <button class="btn btn-sm btn-filter" @click="handlePageChange(currentPage - 1)" :disabled="currentPage === 1">‹</button>
-        <span class="px-2 d-flex align-items-center" style="font-size: 0.85rem; color: var(--text-secondary);">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
-        <button class="btn btn-sm btn-filter" @click="handlePageChange(currentPage + 1)" :disabled="currentPage >= totalPages">›</button>
-        <button class="btn btn-sm btn-filter" @click="handlePageChange(totalPages)" :disabled="currentPage >= totalPages">»</button>
-      </div>
+            <td>
+              <input
+                type="checkbox"
+                class="form-check-input"
+                :value="product.product_id"
+                :checked="selectedProductIds.includes(product.product_id)"
+                @change="handleProductSelect(product.product_id, $event.target.checked)"
+              />
+            </td>
+            <td>
+              <div :class="['fw-medium', getProductNameClass(product)]">
+                {{ product.product_name }}
+              </div>
+            </td>
+            <td class="text-end">
+              <span :class="getStockDisplayClass(product)">
+                {{ getProductStock(product) }}
+              </span>
+            </td>
+            <td class="text-end text-secondary">
+              {{ product.case_size ?? '—' }}
+            </td>
+            <td class="text-end">
+              <span :class="(looseBottles[product.product_id] ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
+                {{ looseBottles[product.product_id] ?? 0 }}
+              </span>
+            </td>
+            <td class="text-end fw-medium text-secondary">
+              ₱{{ formatPrice(product.selling_price || product.price) }}
+            </td>
+            <td class="text-center fw-medium">
+              <span :class="getMarginClass(getProductCostPrice(product), product.selling_price || product.price)">
+                {{ calculateMargin(getProductCostPrice(product), product.selling_price || product.price) }}%
+              </span>
+            </td>
+            <td>
+              <div class="d-flex gap-1 justify-content-center">
+                <button
+                  class="btn btn-outline-secondary btn-icon-only btn-xs action-btn action-btn-edit"
+                  @click="editProduct(product)"
+                  title="Edit"
+                >
+                  <Edit :size="12" />
+                </button>
+                <button
+                  class="btn btn-outline-primary btn-icon-only btn-xs action-btn action-btn-view"
+                  @click="viewProduct(product)"
+                  title="View"
+                >
+                  <Eye :size="12" />
+                </button>
+                <button
+                  class="btn btn-outline-info btn-icon-only btn-xs action-btn action-btn-stock"
+                  @click="restockProduct(product)"
+                  title="Update Stock"
+                >
+                  <Package :size="12" />
+                </button>
+                <button
+                  class="btn btn-outline-danger btn-icon-only btn-xs action-btn action-btn-delete"
+                  @click="handleDeleteProduct(product)"
+                  title="Delete"
+                  :disabled="deleteLoading"
+                >
+                  <Trash2 :size="12" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        </template>
+      </DataTable>
     </div>
 
     <!-- Empty State -->
@@ -327,6 +339,7 @@ import AddProductModal from '@/components/products/AddProductModal.vue'
 import StockUpdateModal from '@/components/products/StockUpdateModal.vue'
 import ViewProductModal from '@/components/products/ViewProductModal.vue'
 import CardTemplate from '@/components/common/CardTemplate.vue'
+import DataTable from '@/components/common/TableTemplate.vue'
 import ImportModal from '@/components/products/ImportModal.vue'
 import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal.vue'
 
@@ -338,6 +351,7 @@ export default {
     ViewProductModal,
     ImportModal,
     CardTemplate,
+    DataTable,
     DeleteConfirmationModal
   },
 
@@ -393,29 +407,8 @@ export default {
       return Object.values(looseBottles.value).reduce((sum, n) => sum + n, 0)
     })
 
-    const incrementLoose = (productId) => {
-      looseBottles.value = { ...looseBottles.value, [productId]: (looseBottles.value[productId] ?? 0) + 1 }
-    }
-
-    const decrementLoose = (productId) => {
-      const current = looseBottles.value[productId] ?? 0
-      if (current > 0) {
-        looseBottles.value = { ...looseBottles.value, [productId]: current - 1 }
-      }
-    }
-
     const sortColumn = ref('name')
     const sortDirection = ref('asc')
-
-    const currentSortKey = computed(() => `${sortColumn.value}-${sortDirection.value}`)
-
-    const handleSortChange = (event) => {
-      const val = event.target.value
-      const dashIdx = val.lastIndexOf('-')
-      sortColumn.value = val.slice(0, dashIdx)
-      sortDirection.value = val.slice(dashIdx + 1)
-      currentPage.value = 1
-    }
 
     const sortedFilteredProducts = computed(() => {
       if (!sortColumn.value || !sortDirection.value) return filteredProducts.value
@@ -452,18 +445,6 @@ export default {
         if (aVal > bVal) return dir === 'asc' ? 1 : -1
         return 0
       })
-    })
-
-    const totalPages = computed(() =>
-      Math.max(1, Math.ceil(filteredProducts.value.length / itemsPerPage.value))
-    )
-
-    const paginationInfo = computed(() => {
-      const total = filteredProducts.value.length
-      if (total === 0) return ''
-      const start = (currentPage.value - 1) * itemsPerPage.value + 1
-      const end = Math.min(currentPage.value * itemsPerPage.value, total)
-      return `${start}–${end} of ${total}`
     })
 
     const paginatedProducts = computed(() => {
@@ -608,15 +589,15 @@ export default {
     const toggleAddDropdown = () => { showAddDropdown.value = !showAddDropdown.value }
     const closeAddDropdown = () => { showAddDropdown.value = false }
 
-    const getCardClass = (product) => {
+    const getRowClass = (product) => {
       const stock = getProductStock(product)
-      if (stock === 0) return 'pc-out-of-stock'
-      if (stock <= (product.low_stock_threshold || 15)) return 'pc-low-stock'
+      if (stock === 0) return 'table-danger'
+      if (stock <= (product.low_stock_threshold || 15)) return 'table-warning'
       return ''
     }
 
     const getProductNameClass = (product) =>
-      product.status === 'inactive' ? 'text-tertiary-medium' : 'pc-name-active'
+      product.status === 'inactive' ? 'text-tertiary-medium' : 'text-primary'
 
     const getStockDisplayClass = (product) => {
       const stock = getProductStock(product)
@@ -718,16 +699,11 @@ export default {
       searchInput,
       sortColumn,
       sortDirection,
-      currentSortKey,
 
       looseBottles,
       totalLooseBottles,
-      incrementLoose,
-      decrementLoose,
 
       paginatedProducts,
-      totalPages,
-      paginationInfo,
       allSelected,
       someSelected,
 
@@ -753,9 +729,8 @@ export default {
       closeAddDropdown,
       handleSort,
       getSortIconClass,
-      handleSortChange,
 
-      getCardClass,
+      getRowClass,
       getProductNameClass,
       getStockDisplayClass,
       getStatusBadgeClass,
@@ -933,206 +908,47 @@ export default {
   color: var(--text-accent) !important;
 }
 
-/* Grid control bar */
-.grid-control-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.25rem 0;
-}
-
-/* Product card grid */
-.product-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-}
-
-@media (min-width: 768px) {
-  .product-cards-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (min-width: 1200px) {
-  .product-cards-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-/* Product card */
-.product-card {
-  border-radius: 0.75rem;
-  border: 1px solid var(--border-primary);
-  padding: 0.875rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  transition: box-shadow 0.15s ease;
+/* Data table wrapper */
+.table-wrapper {
   position: relative;
-  overflow: hidden;
+  z-index: 1;
 }
 
-.product-card:hover {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+.table-wrapper :deep(.table-container) {
+  position: relative;
+  z-index: 1;
 }
 
-.product-card.pc-low-stock::after {
-  content: 'LOW';
-  position: absolute;
-  top: 13px;
-  right: -22px;
-  width: 84px;
-  background: #f59e0b;
-  color: #fff;
-  text-align: center;
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  padding: 3px 0;
-  transform: rotate(45deg);
-  pointer-events: none;
+/* Sortable column headers */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
 }
 
-.product-card.pc-out-of-stock::after {
-  content: 'OUT';
-  position: absolute;
-  top: 13px;
-  right: -22px;
-  width: 84px;
-  background: #ef4444;
-  color: #fff;
-  text-align: center;
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  padding: 3px 0;
-  transform: rotate(45deg);
-  pointer-events: none;
+.sortable-header:hover {
+  background-color: var(--state-hover);
 }
 
-.product-card.pc-out-of-stock {
-  opacity: 0.85;
-}
-
-/* Card sections */
-.pc-top {
-  display: flex;
+.header-content {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.35rem;
 }
 
-.pc-name {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.3;
-  margin-top: 0.25rem;
-  letter-spacing: -0.01em;
-  min-height: 3.1rem;
-  padding-bottom: 0.5rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.pc-name-active {
-  color: var(--text-primary);
-}
-
-/* Stock row */
-.pc-stock-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--border-primary);
-  border-bottom: 1px solid var(--border-primary);
-  margin-top: 0.125rem;
-}
-
-.pc-stock-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.pc-stock-value {
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.pc-stock-label {
-  font-size: 0.62rem;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 0.15rem;
-}
-
-.pc-stock-divider {
-  width: 1px;
-  height: 36px;
-  background: var(--border-primary);
-  flex-shrink: 0;
-}
-
-/* Loose bottles */
-.pc-loose-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pc-loose-label {
-  font-size: 0.72rem;
-  color: var(--text-tertiary);
-}
-
-.pc-loose-count {
-  font-size: 1.35rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* Pricing */
-.pc-price-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pc-price {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.pc-margin {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
-  background: var(--surface-tertiary);
-}
-
-/* Actions */
-.pc-actions {
-  display: flex;
-  gap: 0.5rem;
-  padding-top: 0.375rem;
-  border-top: 1px solid var(--border-primary);
-}
-
-.pc-action-btn {
-  flex: 1;
+.sort-icon {
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border-radius: 0.3rem !important;
+  line-height: 1;
+  transition: color 0.15s ease;
 }
 
-/* Pagination */
-.product-grid-pagination {
-  padding: 0.5rem 0;
+.sort-icon--idle .sort-idle {
+  opacity: 0.3;
+}
+
+.sort-icon--asc,
+.sort-icon--desc {
+  color: var(--text-accent, #0d6efd);
 }
 
 @media (max-width: 768px) {
@@ -1150,13 +966,5 @@ export default {
   }
 
   .dropdown-item { padding: 0.875rem 1rem; }
-
-  .grid-control-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .product-cards-grid { grid-template-columns: 1fr; }
 }
 </style>
