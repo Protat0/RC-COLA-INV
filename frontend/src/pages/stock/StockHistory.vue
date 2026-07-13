@@ -124,6 +124,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStockMovements } from '@/composables/api/useStockMovements.js'
 import { useProducts } from '@/composables/api/useProducts.js'
+import { sortByVariant } from '@/data/mockData.js'
 
 export default {
   name: 'StockHistory',
@@ -152,7 +153,9 @@ export default {
       return out
     })
 
-    const activeProducts = computed(() => products.value.filter(p => p.status === 'active'))
+    const activeProducts = computed(() =>
+      products.value.filter(p => p.status === 'active').sort(sortByVariant)
+    )
 
     const grouped = computed(() =>
       groupByProductAndDate(movements.value, dates.value, activeProducts.value)

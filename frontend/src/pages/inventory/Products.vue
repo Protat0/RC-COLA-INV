@@ -345,6 +345,7 @@
 <script>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useProducts } from '@/composables/api/useProducts'
+import { sortByVariant, sortPackSizes } from '@/data/mockData.js'
 import AddProductModal from '@/components/products/AddProductModal.vue'
 import StockUpdateModal from '@/components/products/StockUpdateModal.vue'
 import ViewProductModal from '@/components/products/ViewProductModal.vue'
@@ -411,7 +412,7 @@ export default {
     const packSizes = computed(() => {
       const set = new Set()
       products.value.forEach(p => { if (p.pack_size) set.add(p.pack_size) })
-      return Array.from(set).sort()
+      return sortPackSizes(set)
     })
 
     const sortColumn = ref('name')
@@ -430,12 +431,14 @@ export default {
       const dir = sortDirection.value
 
       return [...packFilteredProducts.value].sort((a, b) => {
+        if (col === 'name') {
+          const cmp = sortByVariant(a, b)
+          return dir === 'asc' ? cmp : -cmp
+        }
+
         let aVal, bVal
 
-        if (col === 'name') {
-          aVal = (a.product_name || '').toLowerCase()
-          bVal = (b.product_name || '').toLowerCase()
-        } else if (col === 'sku') {
+        if (col === 'sku') {
           aVal = (a.SKU || '').toLowerCase()
           bVal = (b.SKU || '').toLowerCase()
         } else if (col === 'sellingPrice') {

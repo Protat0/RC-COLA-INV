@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { api } from '@/services/api.js'
 import { useProducts } from './useProducts.js'
+import { sortByVariant } from '@/data/mockData.js'
 
 // State (entries, submitted, lastSubmission, error) is scoped per
 // component instance — each useEodUpdate() call produces fresh refs.
@@ -17,7 +18,7 @@ export function useEodUpdate() {
   const lastSubmission = ref(null)
 
   const activeProducts = computed(() =>
-    products.value.filter(p => p.status === 'active')
+    products.value.filter(p => p.status === 'active').sort(sortByVariant)
   )
 
   const initEntries = () => {

@@ -4,8 +4,8 @@ import { ref } from 'vue'
 
 const mockComposable = {
   activeProducts: ref([
-    { product_id: 'prod_a', product_name: 'RC Cola Mega', flavor: 'RC Cola', pack_size: 'Mega', total_stock: 100, back_order: 0 },
-    { product_id: 'prod_b', product_name: 'Lemon 240mL', flavor: 'Lemon', pack_size: '240mL',   total_stock: 50,  back_order: 1 },
+    { product_id: 'prod_a', product_name: 'Mega RC Cola', flavor: 'RC Cola', pack_size: 'Mega', total_stock: 100, back_order: 0 },
+    { product_id: 'prod_b', product_name: '240mL Lemon', flavor: 'Lemon', pack_size: '240mL',   total_stock: 50,  back_order: 1 },
   ]),
   entries: ref({
     prod_a: { cases_in: 0, cases_out: 0, bo_delta: 0 },
@@ -74,7 +74,7 @@ describe('EodUpdate.vue', () => {
 
   it('shows reconciliation banner in preview when flaggedItems present', async () => {
     mockComposable.flaggedItems.value = [
-      { product_id: 'prod_a', product_name: 'RC Cola Mega', cases_in: 0, cases_out: 150, bo_delta: 0, stock_before: 100, stock_after: -50, needs_reconciliation: true },
+      { product_id: 'prod_a', product_name: 'Mega RC Cola', cases_in: 0, cases_out: 150, bo_delta: 0, stock_before: 100, stock_after: -50, needs_reconciliation: true },
     ]
     mockComposable.hasChanges.value = true
     mockComposable.changedItems.value = mockComposable.flaggedItems.value

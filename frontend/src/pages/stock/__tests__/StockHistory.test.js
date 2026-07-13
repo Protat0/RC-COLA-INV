@@ -39,8 +39,8 @@ const mockMovementsComposable = {
 
 const mockProductsComposable = {
   products: ref([
-    { product_id: 'prod_a', product_name: 'RC Cola Mega', flavor: 'RC Cola', pack_size: 'Mega', total_stock: 5, back_order: 0, status: 'active' },
-    { product_id: 'prod_b', product_name: 'Lemon 240mL', flavor: 'Lemon', pack_size: '240mL',   total_stock: 3, back_order: 1, status: 'active' },
+    { product_id: 'prod_a', product_name: 'Mega RC Cola', flavor: 'RC Cola', pack_size: 'Mega', total_stock: 5, back_order: 0, status: 'active' },
+    { product_id: 'prod_b', product_name: '240mL Lemon', flavor: 'Lemon', pack_size: '240mL',   total_stock: 3, back_order: 1, status: 'active' },
   ]),
   loading: ref(false),
   initializeProducts: vi.fn().mockResolvedValue(undefined),
