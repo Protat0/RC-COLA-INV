@@ -308,26 +308,26 @@ export default {
 }
 
 .loose-header {
-  text-align: center;
-  width: 56px;
-  min-width: 56px;
-  max-width: 56px;
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
+  text-align: left;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
 }
 
 .loose-cell {
-  text-align: center;
-  padding: 0.55rem 0.25rem;
-  width: 56px;
-  min-width: 56px;
-  max-width: 56px;
+  text-align: left;
+  padding: 0.55rem 0.15rem;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-primary);
 }
 
 .product-cell {
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 0.3rem 0.55rem 0.75rem;
   width: 220px;
   min-width: 220px;
   max-width: 220px;
