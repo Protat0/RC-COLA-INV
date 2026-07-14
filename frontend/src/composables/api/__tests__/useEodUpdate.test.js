@@ -178,6 +178,25 @@ describe('useEodUpdate — assortment effects', () => {
     expect(c.assortmentEffects.value).toEqual({})
     expect(c.changedItems.value).toEqual([])
   })
+
+  it('hasChanges is true when only assortedSales are set (no direct entries)', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    expect(c.hasChanges.value).toBe(false)
+    c.assortedSales.value = { asrt_mega: 1 }
+    expect(c.hasChanges.value).toBe(true)
+  })
+
+  it('unknown assortment_id in assortedSales yields empty preview and effects (algorithm error swallowed)', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.assortedSales.value = { asrt_bogus: 1 }
+    // Algorithm throws; composable swallows and returns empty result
+    expect(c.assortmentPreview.value).toEqual([])
+    expect(c.assortmentEffects.value).toEqual({})
+    // changedItems should not include algorithm-derived rows
+    expect(c.changedItems.value).toEqual([])
+  })
 })
 
 describe('useEodUpdate — submit', () => {
