@@ -57,6 +57,7 @@
           <thead>
             <tr>
               <th class="sticky-col header-cell product-header">Product</th>
+              <th class="text-end" style="width: 80px;">Loose</th>
               <th
                 v-for="d in dates"
                 :key="d"
@@ -78,6 +79,11 @@
                 <small style="color: var(--text-tertiary);">
                   {{ product.pack_size }}<span v-if="product.back_order > 0"> · BO: {{ product.back_order }}</span>
                 </small>
+              </td>
+              <td data-testid="loose-cell" class="text-end">
+                <span :class="(product.loose_bottles ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
+                  {{ product.loose_bottles ?? 0 }}
+                </span>
               </td>
               <td
                 v-for="d in dates"
@@ -103,6 +109,7 @@
           <tfoot>
             <tr data-testid="aggregate-footer" class="footer-row">
               <td class="sticky-col footer-label">Daily Totals</td>
+              <td></td>
               <td
                 v-for="d in dates"
                 :key="d"
