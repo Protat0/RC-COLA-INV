@@ -48,226 +48,260 @@
         v-if="step === 'preview' && flaggedItems.length > 0"
         data-testid="recon-banner"
         class="d-flex align-items-center gap-2 rounded p-3 mb-3"
-        style="background: var(--status-warning-bg); border: 1px solid var(--status-warning); color: var(--status-warning);"
+        style="border: 1px solid var(--status-warning); color: var(--status-warning); background: var(--status-warning-bg);"
       >
-        <span style="font-size: 1.1rem;">⚠</span>
-        <span>
-          <strong>{{ flaggedItems.length }} product{{ flaggedItems.length !== 1 ? 's' : '' }}</strong>
-          will have negative stock and need reconciliation after this update.
-        </span>
-      </div>
-
-      <!-- Loading -->
-      <div v-if="productsLoading" class="text-center py-5">
-        <div class="spinner-border" style="color: var(--text-accent);" role="status">
-          <span class="visually-hidden">Loading...</span>
+        <span style="font-size: 1.25rem;">⚠</span>
+        <div>
+          <div style="font-weight: 700;">{{ flaggedItems.length }} product{{ flaggedItems.length === 1 ? '' : 's' }} would go negative</div>
+          <div style="font-size: 0.85rem;">Review and adjust before submitting.</div>
         </div>
       </div>
 
-      <!-- STEP: Entry -->
-      <div v-else-if="step === 'entry'">
-        <!-- Product picker (sparse-mode add-a-product control) -->
-        <div data-testid="product-picker" class="surface-card border-theme rounded p-3 mb-3">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <label class="mb-0" style="font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap;">Add product to today's entry</label>
+      <!-- Entry step -->
+      <template v-if="step === 'entry'">
+        <!-- Assorted Sales section -->
+        <div data-testid="assorted-sales-section" class="surface-card border-theme rounded p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0" style="color: var(--text-primary); font-weight: 700;">Assorted Sales</h6>
+            <small style="color: var(--text-tertiary);">Mixed-flavor packages sold today</small>
+          </div>
+          <div v-if="assortments.length === 0" class="text-tertiary-medium" style="font-size: 0.85rem;">
+            No assortments configured.
+          </div>
+          <div v-else class="d-flex flex-column gap-2">
+            <div
+              v-for="asrt in assortments"
+              :key="asrt.assortment_id"
+              data-testid="assortment-row"
+              class="d-flex flex-wrap align-items-center gap-2 pb-2 border-bottom-theme"
+            >
+              <div class="flex-grow-1" style="min-width: 200px;">
+                <div style="font-weight: 600; color: var(--text-primary);">{{ asrt.name }}</div>
+                <div style="font-size: 0.8rem; color: var(--text-tertiary);">
+                  {{ asrt.pack_size_label }} · ₱{{ asrt.price }}
+                  <span
+                    v-if="asrt.original_price && asrt.original_price !== asrt.price"
+                    style="text-decoration: line-through; margin-left: 0.4rem;"
+                  >₱{{ asrt.original_price }}</span>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label class="mb-0" style="font-size: 0.8rem; color: var(--text-tertiary);">Qty</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm input-theme"
+                  style="width: 90px;"
+                  min="0"
+                  step="1"
+                  :value="assortedSales[asrt.assortment_id] || 0"
+                  @input="setAssortedQty(asrt.assortment_id, $event.target.value)"
+                />
+              </div>
+            </div>
+            <div v-if="assortmentPreview.length > 0" class="mt-2 rounded p-2" style="background: var(--surface-tertiary);">
+              <div
+                v-for="p in assortmentPreview"
+                :key="p.assortment_id"
+                style="font-size: 0.8rem; color: var(--text-secondary);"
+              >
+                <strong>{{ p.qty }} × {{ p.name }}:</strong>
+                <span v-for="(eff, i) in p.effects" :key="i" class="ms-2">
+                  {{ productNameById[eff.product_id] }} needs {{ eff.bottles_needed }}
+                  <span v-if="eff.cases_broken > 0">— break {{ eff.cases_broken }} case</span>
+                  <span v-if="eff.from_loose > 0">— {{ eff.from_loose }} from loose</span>{{ i < p.effects.length - 1 ? ';' : '' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Working set + picker -->
+        <div class="surface-card border-theme rounded p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0" style="color: var(--text-primary); font-weight: 700;">Per-product entries</h6>
+            <button
+              class="btn btn-filter btn-sm"
+              style="border-radius: 0.3rem !important;"
+              @click="addAllToWorkingSet"
+              :disabled="workingSet.length === activeProducts.length"
+            >Show all</button>
+          </div>
+          <div data-testid="product-picker" class="mb-3">
+            <label class="mb-1" style="font-size: 0.85rem; color: var(--text-tertiary);">Add product to working set</label>
             <select
-              class="form-select form-select-sm input-theme"
-              style="max-width: 320px;"
               v-model="pickerSelection"
+              class="form-select form-select-sm input-theme"
               @change="onPickerChange"
             >
-              <option value="" disabled>— pick a product —</option>
+              <option value="" disabled>Search / select…</option>
               <option
                 v-for="p in productsNotInWorkingSet"
                 :key="p.product_id"
                 :value="p.product_id"
-              >
-                {{ p.product_name }}
-              </option>
+              >{{ p.product_name }}</option>
             </select>
-            <button
-              class="btn btn-filter btn-sm"
-              style="border-radius: 0.3rem !important;"
-              @click="addAllActive"
-              :disabled="workingSet.length === activeProducts.length"
-              title="Add every active product to the entry"
-            >Show all</button>
+          </div>
+
+          <div v-if="workingSet.length === 0" class="text-tertiary-medium" style="font-size: 0.85rem;">
+            No products in the working set yet. Add one above, or click "Show all".
+          </div>
+
+          <div v-else class="d-flex flex-column gap-2">
+            <div
+              v-for="product in workingSetProducts"
+              :key="product.product_id"
+              data-testid="product-row"
+              class="d-flex flex-wrap align-items-center gap-2 pb-2 border-bottom-theme"
+            >
+              <div class="flex-grow-1" style="min-width: 180px;">
+                <div style="font-weight: 600; color: var(--text-primary);">{{ product.product_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-tertiary);">
+                  Stock {{ product.total_stock ?? 0 }} · Loose {{ product.loose_bottles ?? 0 }} · BO {{ product.back_order ?? 0 }}
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <label class="mb-0" style="font-size: 0.75rem; color: var(--text-tertiary);">In</label>
+                <input
+                  type="number"
+                  data-testid="input-cases-in"
+                  class="form-control form-control-sm input-theme"
+                  style="width: 70px;"
+                  min="0"
+                  step="1"
+                  v-model.number="entries[product.product_id].cases_in"
+                />
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <label class="mb-0" style="font-size: 0.75rem; color: var(--text-tertiary);">Out</label>
+                <input
+                  type="number"
+                  data-testid="input-cases-out"
+                  class="form-control form-control-sm input-theme"
+                  style="width: 70px;"
+                  min="0"
+                  step="1"
+                  v-model.number="entries[product.product_id].cases_out"
+                />
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <label class="mb-0" style="font-size: 0.75rem; color: var(--text-tertiary);">BO Δ</label>
+                <input
+                  type="number"
+                  data-testid="input-bo-delta"
+                  class="form-control form-control-sm input-theme"
+                  style="width: 70px;"
+                  step="1"
+                  v-model.number="entries[product.product_id].bo_delta"
+                />
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <label class="mb-0" style="font-size: 0.75rem; color: var(--text-tertiary);">Loose Δ</label>
+                <input
+                  type="number"
+                  data-testid="input-loose-delta"
+                  class="form-control form-control-sm input-theme"
+                  style="width: 70px;"
+                  step="1"
+                  v-model.number="entries[product.product_id].loose_delta"
+                />
+              </div>
+              <div class="d-flex align-items-center gap-1" :style="afterStyle(product)">
+                <label class="mb-0" style="font-size: 0.75rem;">After</label>
+                <span style="font-weight: 600;">{{ computeAfter(product) }}</span>
+              </div>
+              <button
+                class="btn btn-delete btn-sm"
+                style="border-radius: 0.3rem !important;"
+                @click="removeFromWorkingSet(product.product_id)"
+              >Remove</button>
+            </div>
           </div>
         </div>
 
-        <!-- Working-set table -->
-        <div v-if="workingSet.length > 0" class="surface-card border-theme rounded" style="overflow: hidden;">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th style="color: var(--text-primary);">Product</th>
-                <th class="text-center" style="width: 90px; color: var(--text-primary);">Bal</th>
-                <th class="text-center" style="width: 120px; color: var(--text-primary);">Cases In</th>
-                <th class="text-center" style="width: 120px; color: var(--text-primary);">Cases Out</th>
-                <th class="text-center" style="width: 110px; color: var(--text-primary);">BO Δ</th>
-                <th class="text-center" style="width: 110px; color: var(--text-primary);">After</th>
-                <th style="width: 36px;"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="product in workingSetProducts"
-                :key="product.product_id"
-                data-testid="product-row"
-              >
-                <td style="color: var(--text-primary); font-weight: 500;">
-                  <div>{{ product.product_name }}</div>
-                  <small style="color: var(--text-tertiary);">{{ product.pack_size }} · BO: {{ product.back_order }}</small>
-                </td>
-                <td class="text-center">
-                  <span :style="stockStyle(product)">{{ product.total_stock ?? 0 }}</span>
-                </td>
-                <td class="text-center">
-                  <input
-                    v-if="entries[product.product_id]"
-                    data-testid="input-cases-in"
-                    type="number"
-                    min="0"
-                    class="form-control form-control-sm text-center input-theme"
-                    v-model.number="entries[product.product_id].cases_in"
-                    style="border-radius: 0.3rem;"
-                  />
-                </td>
-                <td class="text-center">
-                  <input
-                    v-if="entries[product.product_id]"
-                    data-testid="input-cases-out"
-                    type="number"
-                    min="0"
-                    class="form-control form-control-sm text-center input-theme"
-                    v-model.number="entries[product.product_id].cases_out"
-                    style="border-radius: 0.3rem;"
-                  />
-                </td>
-                <td class="text-center">
-                  <input
-                    v-if="entries[product.product_id]"
-                    data-testid="input-bo-delta"
-                    type="number"
-                    class="form-control form-control-sm text-center input-theme"
-                    v-model.number="entries[product.product_id].bo_delta"
-                    style="border-radius: 0.3rem;"
-                  />
-                </td>
-                <td class="text-center fw-bold" :style="afterStyle(product)">
-                  {{ computeAfter(product) }}
-                </td>
-                <td class="text-center">
-                  <button
-                    class="btn btn-cancel btn-sm"
-                    style="border-radius: 0.3rem !important; padding: 0.15rem 0.4rem; font-size: 0.75rem;"
-                    @click="removeFromWorkingSet(product.product_id)"
-                    title="Remove from entry"
-                  >✕</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="d-flex justify-content-end gap-2">
+          <button
+            class="btn btn-submit btn-sm"
+            style="border-radius: 0.3rem !important;"
+            data-testid="preview-btn"
+            :disabled="!hasChanges"
+            @click="goToPreview"
+          >Preview</button>
+        </div>
+      </template>
+
+      <!-- Preview step -->
+      <template v-else-if="step === 'preview'">
+        <div class="surface-card border-theme rounded p-3 mb-3">
+          <h6 class="mb-3" style="color: var(--text-primary); font-weight: 700;">Preview — {{ formattedDate }}</h6>
+          <div v-if="changedItems.length === 0" class="text-tertiary-medium" style="font-size: 0.85rem;">
+            No changes to apply.
+          </div>
+          <div v-else class="table-responsive">
+            <table class="table table-sm" style="color: var(--text-primary);">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th class="text-end">Cases In</th>
+                  <th class="text-end">Cases Out (direct + assortment)</th>
+                  <th class="text-end">Stock Before → After</th>
+                  <th class="text-end">Loose Before → After</th>
+                  <th class="text-end">BO Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in changedItems"
+                  :key="item.product_id"
+                  :style="item.needs_reconciliation ? 'background: var(--status-warning-bg);' : ''"
+                >
+                  <td>{{ item.product_name }}</td>
+                  <td class="text-end">{{ item.cases_in }}</td>
+                  <td class="text-end">{{ item.cases_out_direct }}<span v-if="item.cases_broken > 0"> + {{ item.cases_broken }}</span> = {{ item.cases_out_total }}</td>
+                  <td class="text-end" :style="item.needs_reconciliation ? 'color: var(--status-error); font-weight: 700;' : ''">
+                    {{ item.stock_before }} → {{ item.stock_after }}
+                  </td>
+                  <td class="text-end">{{ item.loose_before }} → {{ item.loose_after }}</td>
+                  <td class="text-end">{{ item.bo_delta }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <!-- Empty working set hint -->
-        <div v-else class="text-center py-4" style="color: var(--text-tertiary); font-size: 0.9rem;">
-          Add products above to record today's activity.
+        <div
+          v-if="assortmentPreview.length > 0"
+          data-testid="assortment-preview"
+          class="surface-card border-theme rounded p-3 mb-3"
+        >
+          <h6 class="mb-2" style="color: var(--text-primary); font-weight: 700;">Assortment breakdown</h6>
+          <div
+            v-for="p in assortmentPreview"
+            :key="p.assortment_id"
+            class="mb-2 pb-2 border-bottom-theme"
+          >
+            <div style="font-weight: 600; color: var(--text-secondary);">{{ p.qty }} × {{ p.name }}</div>
+            <ul class="mb-0" style="font-size: 0.8rem; color: var(--text-tertiary);">
+              <li v-for="(eff, i) in p.effects" :key="i">
+                {{ productNameById[eff.product_id] }}: needs {{ eff.bottles_needed }} — {{ eff.from_loose }} from loose, {{ eff.from_cases_broken }} from broken cases ({{ eff.cases_broken }} case{{ eff.cases_broken === 1 ? '' : 's' }})
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
 
-      <!-- STEP: Preview -->
-      <div v-else-if="step === 'preview'">
-        <div v-if="changedItems.length === 0" class="text-center py-4" style="color: var(--text-tertiary);">
-          No changes to apply.
-        </div>
-        <div v-else class="surface-card border-theme rounded" style="overflow: hidden;">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th style="color: var(--text-primary);">Product</th>
-                <th class="text-center" style="width: 80px; color: var(--text-primary);">Before</th>
-                <th class="text-center" style="width: 80px; color: var(--text-primary);">In</th>
-                <th class="text-center" style="width: 80px; color: var(--text-primary);">Out</th>
-                <th class="text-center" style="width: 80px; color: var(--text-primary);">After</th>
-                <th class="text-center" style="width: 80px; color: var(--text-primary);">BO Δ</th>
-                <th class="text-center" style="width: 130px; color: var(--text-primary);">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="item in changedItems"
-                :key="item.product_id"
-                :style="item.needs_reconciliation ? 'background: var(--status-warning-bg);' : ''"
-              >
-                <td style="color: var(--text-primary); font-weight: 500;">{{ item.product_name }}</td>
-                <td class="text-center" style="color: var(--text-secondary);">{{ item.stock_before }}</td>
-                <td class="text-center fw-bold" style="color: var(--status-success);">
-                  <span v-if="item.cases_in > 0">+{{ item.cases_in }}</span>
-                  <span v-else style="color: var(--text-tertiary);">—</span>
-                </td>
-                <td class="text-center fw-bold" style="color: var(--status-error);">
-                  <span v-if="item.cases_out > 0">−{{ item.cases_out }}</span>
-                  <span v-else style="color: var(--text-tertiary);">—</span>
-                </td>
-                <td class="text-center fw-bold" :style="item.needs_reconciliation ? 'color: var(--status-error);' : 'color: var(--status-success);'">
-                  {{ item.stock_after }}
-                </td>
-                <td class="text-center" style="color: var(--text-secondary);">
-                  <span v-if="item.bo_delta !== 0">{{ item.bo_delta > 0 ? '+' : '' }}{{ item.bo_delta }}</span>
-                  <span v-else style="color: var(--text-tertiary);">—</span>
-                </td>
-                <td class="text-center">
-                  <span
-                    v-if="item.needs_reconciliation"
-                    class="badge"
-                    style="background: var(--status-warning); color: var(--text-inverse); font-size: 0.68rem;"
-                  >Needs Recon.</span>
-                  <span
-                    v-else
-                    class="badge"
-                    style="background: var(--status-success); color: var(--text-inverse); font-size: 0.68rem;"
-                  >OK</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Footer actions -->
-      <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-        <button
-          v-if="step === 'preview'"
-          class="btn btn-filter btn-sm"
-          style="border-radius: 0.3rem !important;"
-          @click="step = 'entry'"
-        >← Back</button>
-        <div v-else></div>
-
-        <div class="d-flex gap-2">
+        <div class="d-flex justify-content-end gap-2">
           <button
             class="btn btn-cancel btn-sm"
             style="border-radius: 0.3rem !important;"
-            @click="$router.push('/products')"
-          >Cancel</button>
+            @click="step = 'entry'"
+          >Back</button>
           <button
-            v-if="step === 'entry'"
-            data-testid="preview-btn"
             class="btn btn-submit btn-sm"
             style="border-radius: 0.3rem !important;"
-            @click="step = 'preview'"
-            :disabled="!hasChanges"
-          >Preview Changes →</button>
-          <button
-            v-if="step === 'preview'"
-            class="btn btn-add btn-sm"
-            style="border-radius: 0.3rem !important;"
+            :disabled="loading || !hasChanges"
             @click="handleSubmit"
-            :disabled="loading || changedItems.length === 0"
-          >{{ loading ? 'Applying...' : 'Apply Changes' }}</button>
+          >{{ loading ? 'Submitting…' : 'Apply EOD' }}</button>
         </div>
-      </div>
+      </template>
     </template>
   </div>
 </template>
@@ -278,33 +312,41 @@ import { useEodUpdate } from '@/composables/api/useEodUpdate.js'
 
 export default {
   name: 'EodUpdate',
-
   setup() {
     const {
       activeProducts,
       entries,
-      changedItems,
-      flaggedItems,
-      hasChanges,
+      assortedSales,
+      assortments,
+      assortmentsLoading,
+      fetchAssortments,
+      assortmentEffects,
+      assortmentPreview,
       loading,
       productsLoading,
       submitted,
       lastSubmission,
       error,
+      changedItems,
+      flaggedItems,
+      hasChanges,
       initEntries,
       initializeProducts,
       submitEod,
       resetForm,
     } = useEodUpdate()
 
+    const isoToday = () => new Date().toISOString().slice(0, 10)
+    const entryDate = ref(isoToday())
     const step = ref('entry')
-    const entryDate = ref(new Date().toISOString().split('T')[0])
+
     const workingSet = ref([])
     const pickerSelection = ref('')
 
-    const formattedDate = computed(() => {
-      const d = new Date(entryDate.value + 'T00:00:00')
-      return d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    const productNameById = computed(() => {
+      const map = {}
+      activeProducts.value.forEach(p => { map[p.product_id] = p.product_name })
+      return map
     })
 
     const workingSetProducts = computed(() =>
@@ -312,43 +354,50 @@ export default {
         .map(id => activeProducts.value.find(p => p.product_id === id))
         .filter(Boolean)
     )
-
     const productsNotInWorkingSet = computed(() =>
       activeProducts.value.filter(p => !workingSet.value.includes(p.product_id))
     )
 
-    const addToWorkingSet = (productId) => {
-      if (!productId || workingSet.value.includes(productId)) return
-      workingSet.value = [...workingSet.value, productId]
+    const addToWorkingSet = (product_id) => {
+      if (!workingSet.value.includes(product_id)) {
+        workingSet.value.push(product_id)
+      }
     }
-
-    const removeFromWorkingSet = (productId) => {
-      workingSet.value = workingSet.value.filter(id => id !== productId)
-      if (entries.value[productId]) {
-        entries.value[productId] = { cases_in: 0, cases_out: 0, bo_delta: 0 }
+    const removeFromWorkingSet = (product_id) => {
+      workingSet.value = workingSet.value.filter(id => id !== product_id)
+      if (entries.value[product_id]) {
+        entries.value[product_id].cases_in = 0
+        entries.value[product_id].cases_out = 0
+        entries.value[product_id].bo_delta = 0
+        entries.value[product_id].loose_delta = 0
+      }
+    }
+    const addAllToWorkingSet = () => {
+      workingSet.value = activeProducts.value.map(p => p.product_id)
+    }
+    const onPickerChange = () => {
+      if (pickerSelection.value) {
+        addToWorkingSet(pickerSelection.value)
+        pickerSelection.value = ''
       }
     }
 
-    const onPickerChange = () => {
-      addToWorkingSet(pickerSelection.value)
-      pickerSelection.value = ''
-    }
-
-    const addAllActive = () => {
-      workingSet.value = activeProducts.value.map(p => p.product_id)
+    const setAssortedQty = (assortment_id, raw) => {
+      const n = Number(raw)
+      if (!n || n <= 0) {
+        const next = { ...assortedSales.value }
+        delete next[assortment_id]
+        assortedSales.value = next
+      } else {
+        assortedSales.value = { ...assortedSales.value, [assortment_id]: n }
+      }
     }
 
     const computeAfter = (product) => {
       const entry = entries.value[product.product_id]
+      const effect = assortmentEffects.value[product.product_id] || { cases_broken: 0 }
       if (!entry) return product.total_stock ?? 0
-      return (product.total_stock ?? 0) + (entry.cases_in || 0) - (entry.cases_out || 0)
-    }
-
-    const stockStyle = (product) => {
-      const stock = product.total_stock ?? 0
-      if (stock === 0) return 'color: var(--status-error); font-weight: 700;'
-      if (stock <= (product.low_stock_threshold || 15)) return 'color: var(--status-warning); font-weight: 700;'
-      return 'color: var(--status-success);'
+      return (product.total_stock ?? 0) + (entry.cases_in || 0) - (entry.cases_out || 0) - effect.cases_broken
     }
 
     const afterStyle = (product) => {
@@ -358,6 +407,9 @@ export default {
       return 'color: var(--status-success);'
     }
 
+    const goToPreview = () => {
+      step.value = 'preview'
+    }
     const handleSubmit = async () => {
       try {
         await submitEod(entryDate.value)
@@ -365,73 +417,71 @@ export default {
         console.error('EOD submit failed:', err)
       }
     }
-
     const startNew = () => {
       step.value = 'entry'
-      entryDate.value = new Date().toISOString().split('T')[0]
+      entryDate.value = isoToday()
       workingSet.value = []
       pickerSelection.value = ''
       resetForm()
     }
 
-    onMounted(async () => {
-      await initializeProducts()
-      initEntries()
+    const formattedDate = computed(() => {
+      try {
+        const d = new Date(entryDate.value + 'T00:00:00')
+        return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })
+      } catch {
+        return entryDate.value
+      }
+    })
+
+    onMounted(() => {
+      initializeProducts().then(() => {
+        initEntries()
+      })
+      fetchAssortments()
     })
 
     return {
       activeProducts,
       entries,
-      changedItems,
-      flaggedItems,
-      hasChanges,
+      assortedSales,
+      assortments,
+      assortmentsLoading,
+      assortmentEffects,
+      assortmentPreview,
       loading,
       productsLoading,
       submitted,
       lastSubmission,
       error,
-      step,
+      changedItems,
+      flaggedItems,
+      hasChanges,
       entryDate,
       formattedDate,
+      step,
       workingSet,
       workingSetProducts,
       productsNotInWorkingSet,
       pickerSelection,
+      productNameById,
       addToWorkingSet,
       removeFromWorkingSet,
+      addAllToWorkingSet,
       onPickerChange,
-      addAllActive,
+      setAssortedQty,
       computeAfter,
-      stockStyle,
       afterStyle,
+      goToPreview,
       handleSubmit,
       startNew,
     }
-  }
+  },
 }
 </script>
 
 <style scoped>
-.eod-page {
-  min-height: 100vh;
-}
-
-.table thead th {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.75rem 1rem;
-  border-bottom: 2px solid var(--border-primary);
-}
-
-.table tbody td {
-  padding: 0.55rem 1rem;
-  border-color: var(--border-primary);
-  vertical-align: middle;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
+.border-bottom-theme {
+  border-bottom: 1px solid var(--border-primary);
 }
 </style>
