@@ -57,8 +57,16 @@
         </div>
       </div>
 
+      <!-- Loading state (initial products / assortments fetch) -->
+      <div v-if="productsLoading || assortmentsLoading" class="text-center py-5">
+        <div class="spinner-border" style="color: var(--text-accent);" role="status">
+          <span class="visually-hidden">Loading…</span>
+        </div>
+        <p class="mt-2" style="color: var(--text-tertiary); font-size: 0.85rem;">Loading products and assortments…</p>
+      </div>
+
       <!-- Entry step -->
-      <template v-if="step === 'entry'">
+      <template v-else-if="step === 'entry'">
         <!-- Assorted Sales section -->
         <div data-testid="assorted-sales-section" class="surface-card border-theme rounded p-3 mb-3">
           <div class="d-flex justify-content-between align-items-center mb-2">
