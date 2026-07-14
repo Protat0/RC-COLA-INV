@@ -308,18 +308,20 @@ export default {
 }
 
 .loose-header {
-  text-align: right;
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+  text-align: center;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .loose-cell {
-  text-align: right;
-  padding: 0.55rem 0.75rem;
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+  text-align: center;
+  padding: 0.55rem 0.25rem;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-primary);
 }
