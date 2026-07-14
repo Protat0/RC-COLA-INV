@@ -106,17 +106,20 @@
                 />
               </div>
             </div>
-            <div v-if="assortmentPreview.length > 0" class="mt-2 rounded p-2" style="background: var(--surface-tertiary);">
+            <div v-if="assortmentSummary.length > 0" data-testid="assortment-summary" class="mt-2 rounded p-2" style="background: var(--surface-tertiary);">
               <div
-                v-for="p in assortmentPreview"
-                :key="p.assortment_id"
+                v-for="s in assortmentSummary"
+                :key="s.assortment_id"
                 style="font-size: 0.8rem; color: var(--text-secondary);"
               >
-                <strong>{{ p.qty }} × {{ p.name }}:</strong>
-                <span v-for="(eff, i) in p.effects" :key="i" class="ms-2">
-                  {{ productNameById[eff.product_id] }} needs {{ eff.bottles_needed }}
-                  <span v-if="eff.cases_broken > 0">— break {{ eff.cases_broken }} case</span>
-                  <span v-if="eff.from_loose > 0">— {{ eff.from_loose }} from loose</span>{{ i < p.effects.length - 1 ? ';' : '' }}
+                <strong>{{ s.qty }} × {{ s.name }}</strong>
+                <span class="ms-2">→ {{ s.total_cases_broken }} case{{ s.total_cases_broken === 1 ? '' : 's' }} broken</span>
+                <span class="ms-1">·</span>
+                <span
+                  class="ms-1"
+                  :style="s.loose_change > 0 ? 'color: var(--status-warning); font-weight: 600;' : s.loose_change < 0 ? 'color: var(--status-success); font-weight: 600;' : ''"
+                >
+                  {{ s.loose_change > 0 ? '+' : '' }}{{ s.loose_change }} loose bottle{{ Math.abs(s.loose_change) === 1 ? '' : 's' }}
                 </span>
               </div>
             </div>
@@ -357,6 +360,28 @@ export default {
       return map
     })
 
+    // One-line summary per assortment sale for the entry-step preview.
+    // Per-flavor detail stays on the preview step's Assortment breakdown card.
+    const assortmentSummary = computed(() => {
+      const caseSizeById = {}
+      activeProducts.value.forEach(p => { caseSizeById[p.product_id] = p.case_size ?? 0 })
+      return assortmentPreview.value.map(p => {
+        let totalCases = 0
+        let looseChange = 0
+        p.effects.forEach(eff => {
+          totalCases += eff.cases_broken
+          looseChange += (eff.cases_broken * (caseSizeById[eff.product_id] || 0)) - eff.bottles_needed
+        })
+        return {
+          assortment_id: p.assortment_id,
+          name: p.name,
+          qty: p.qty,
+          total_cases_broken: totalCases,
+          loose_change: looseChange,
+        }
+      })
+    })
+
     const workingSetProducts = computed(() =>
       workingSet.value
         .map(id => activeProducts.value.find(p => p.product_id === id))
@@ -457,6 +482,7 @@ export default {
       assortmentsLoading,
       assortmentEffects,
       assortmentPreview,
+      assortmentSummary,
       loading,
       productsLoading,
       submitted,
