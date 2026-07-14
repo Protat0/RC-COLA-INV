@@ -274,16 +274,24 @@ export default {
 }
 
 .header-cell {
-  background: var(--surface-primary);
-  color: var(--text-primary);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.6rem 0.6rem;
   border-bottom: 2px solid var(--border-primary);
   text-align: center;
   white-space: nowrap;
+}
+
+/* Sticky column HEADER cells need the header background too — otherwise
+   the more-specific .sticky-col* rules would pin them white. */
+thead .sticky-col,
+thead .sticky-col-loose,
+thead .sticky-col-bo {
+  background: var(--surface-secondary);
 }
 
 .product-header {
@@ -308,11 +316,11 @@ export default {
   background: var(--surface-primary);
 }
 
-/* Third sticky column (BO) — pinned right after Loose (260 = 220 + 40).
+/* Third sticky column (BO) — pinned right after Loose (264 = 220 + 44).
    Owns the right-edge shadow so it visually terminates the sticky region. */
 .sticky-col-bo {
   position: sticky;
-  left: 260px;
+  left: 264px;
   z-index: 2;
   background: var(--surface-primary);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
@@ -320,21 +328,21 @@ export default {
 
 .loose-header,
 .bo-header {
-  text-align: left;
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-  padding-left: 0.15rem;
-  padding-right: 0.15rem;
+  text-align: center;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
 }
 
 .loose-cell,
 .bo-cell {
-  text-align: left;
-  padding: 0.55rem 0.15rem;
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
+  text-align: center;
+  padding: 0.55rem 0.35rem;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-primary);
 }
