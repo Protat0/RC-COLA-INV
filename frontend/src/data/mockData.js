@@ -21,32 +21,35 @@ export const sortPackSizes = (sizes) =>
 
 export const MOCK_PRODUCTS = [
   // Mega
-  { product_id: 'prod_rc_mega',    product_name: 'Mega RC Cola',       SKU: 'RC-MEGA',    flavor: 'RC Cola', pack_size: 'Mega',        status: 'active',   total_stock: 144, low_stock_threshold: 20, price: 55,  cost_price: 42, back_order: 0, case_size: 12 },
-  { product_id: 'prod_lm_mega',    product_name: 'Mega Lemon',         SKU: 'LM-MEGA',    flavor: 'Lemon',   pack_size: 'Mega',        status: 'active',   total_stock: 59,  low_stock_threshold: 15, price: 55,  cost_price: 42, back_order: 0, case_size: 12 },
-  { product_id: 'prod_or_mega',    product_name: 'Mega Orange',        SKU: 'OR-MEGA',    flavor: 'Orange',  pack_size: 'Mega',        status: 'active',   total_stock: 44,  low_stock_threshold: 15, price: 55,  cost_price: 42, back_order: 0, case_size: 12 },
+  { product_id: 'prod_rc_mega',    product_name: 'Mega RC Cola',       SKU: 'RC-MEGA',    flavor: 'RC Cola', pack_size: 'Mega',        status: 'active',   total_stock: 144, low_stock_threshold: 20, price: 55,  cost_price: 42, back_order: 0, loose_bottles: 8, case_size: 12 },
+  { product_id: 'prod_lm_mega',    product_name: 'Mega Lemon',         SKU: 'LM-MEGA',    flavor: 'Lemon',   pack_size: 'Mega',        status: 'active',   total_stock: 59,  low_stock_threshold: 15, price: 55,  cost_price: 42, back_order: 0, loose_bottles: 8, case_size: 12 },
+  { product_id: 'prod_or_mega',    product_name: 'Mega Orange',        SKU: 'OR-MEGA',    flavor: 'Orange',  pack_size: 'Mega',        status: 'active',   total_stock: 44,  low_stock_threshold: 15, price: 55,  cost_price: 42, back_order: 0, loose_bottles: 8, case_size: 12 },
   // 240mL
-  { product_id: 'prod_rc_240',     product_name: '240mL RC Cola',      SKU: 'RC-240',     flavor: 'RC Cola', pack_size: '240mL',       status: 'active',   total_stock: 3,   low_stock_threshold: 10, price: 28,  cost_price: 22, back_order: 0, case_size: 24 },
-  { product_id: 'prod_lm_240',     product_name: '240mL Lemon',        SKU: 'LM-240',     flavor: 'Lemon',   pack_size: '240mL',       status: 'active',   total_stock: 70,  low_stock_threshold: 20, price: 28,  cost_price: 22, back_order: 1, case_size: 24 },
-  { product_id: 'prod_or_240',     product_name: '240mL Orange',       SKU: 'OR-240',     flavor: 'Orange',  pack_size: '240mL',       status: 'active',   total_stock: 13,  low_stock_threshold: 10, price: 28,  cost_price: 22, back_order: 0, case_size: 24 },
-  { product_id: 'prod_se_240',     product_name: '240mL Seetrus',      SKU: 'SE-240',     flavor: 'Seetrus', pack_size: '240mL',       status: 'active',   total_stock: 0,   low_stock_threshold: 10, price: 28,  cost_price: 22, back_order: 0, case_size: 24 },
+  { product_id: 'prod_rc_240',     product_name: '240mL RC Cola',      SKU: 'RC-240',     flavor: 'RC Cola', pack_size: '240mL',       status: 'active',   total_stock: 3,   low_stock_threshold: 10, price: 28,  cost_price: 22, back_order: 0, loose_bottles: 0, case_size: 24 },
+  { product_id: 'prod_lm_240',     product_name: '240mL Lemon',        SKU: 'LM-240',     flavor: 'Lemon',   pack_size: '240mL',       status: 'active',   total_stock: 70,  low_stock_threshold: 20, price: 28,  cost_price: 22, back_order: 1, loose_bottles: 0, case_size: 24 },
+  { product_id: 'prod_or_240',     product_name: '240mL Orange',       SKU: 'OR-240',     flavor: 'Orange',  pack_size: '240mL',       status: 'active',   total_stock: 13,  low_stock_threshold: 10, price: 28,  cost_price: 22, back_order: 0, loose_bottles: 0, case_size: 24 },
+  { product_id: 'prod_se_240',     product_name: '240mL Seetrus',      SKU: 'SE-240',     flavor: 'Seetrus', pack_size: '240mL',       status: 'active',   total_stock: 0,   low_stock_threshold: 10, price: 28,  cost_price: 22, back_order: 0, loose_bottles: 0, case_size: 24 },
   // Litro (case of 6, per assortment pack size)
-  { product_id: 'prod_rc_litro',   product_name: 'Litro RC Cola',      SKU: 'RC-LITRO',   flavor: 'RC Cola', pack_size: 'Litro',       status: 'active',   total_stock: 0,   low_stock_threshold: 5,  price: 65,  cost_price: 50, back_order: 0, case_size: 6 },
-  { product_id: 'prod_lm_litro',   product_name: 'Litro Lemon',        SKU: 'LM-LITRO',   flavor: 'Lemon',   pack_size: 'Litro',       status: 'active',   total_stock: 31,  low_stock_threshold: 10, price: 65,  cost_price: 50, back_order: 0, case_size: 6 },
-  { product_id: 'prod_or_litro',   product_name: 'Litro Orange',       SKU: 'OR-LITRO',   flavor: 'Orange',  pack_size: 'Litro',       status: 'active',   total_stock: 31,  low_stock_threshold: 10, price: 65,  cost_price: 50, back_order: 1, case_size: 6 },
+  { product_id: 'prod_rc_litro',   product_name: 'Litro RC Cola',      SKU: 'RC-LITRO',   flavor: 'RC Cola', pack_size: 'Litro',       status: 'active',   total_stock: 0,   low_stock_threshold: 5,  price: 65,  cost_price: 50, back_order: 0, loose_bottles: 0, case_size: 6 },
+  { product_id: 'prod_lm_litro',   product_name: 'Litro Lemon',        SKU: 'LM-LITRO',   flavor: 'Lemon',   pack_size: 'Litro',       status: 'active',   total_stock: 31,  low_stock_threshold: 10, price: 65,  cost_price: 50, back_order: 0, loose_bottles: 0, case_size: 6 },
+  { product_id: 'prod_or_litro',   product_name: 'Litro Orange',       SKU: 'OR-LITRO',   flavor: 'Orange',  pack_size: 'Litro',       status: 'active',   total_stock: 31,  low_stock_threshold: 10, price: 65,  cost_price: 50, back_order: 1, loose_bottles: 0, case_size: 6 },
   // 1.5L (case of 6; inactive — no activity in 43-day source data)
-  { product_id: 'prod_rc_15l',     product_name: '1.5L RC Cola',       SKU: 'RC-15L',     flavor: 'RC Cola', pack_size: '1.5L',        status: 'inactive', total_stock: 0,   low_stock_threshold: 5,  price: 90,  cost_price: 70, back_order: 0, case_size: 6 },
-  { product_id: 'prod_lm_15l',     product_name: '1.5L Lemon',         SKU: 'LM-15L',     flavor: 'Lemon',   pack_size: '1.5L',        status: 'inactive', total_stock: 0,   low_stock_threshold: 5,  price: 90,  cost_price: 70, back_order: 0, case_size: 6 },
-  { product_id: 'prod_or_15l',     product_name: '1.5L Orange',        SKU: 'OR-15L',     flavor: 'Orange',  pack_size: '1.5L',        status: 'inactive', total_stock: 0,   low_stock_threshold: 5,  price: 90,  cost_price: 70, back_order: 0, case_size: 6 },
+  { product_id: 'prod_rc_15l',     product_name: '1.5L RC Cola',       SKU: 'RC-15L',     flavor: 'RC Cola', pack_size: '1.5L',        status: 'inactive', total_stock: 0,   low_stock_threshold: 5,  price: 90,  cost_price: 70, back_order: 0, loose_bottles: 0, case_size: 6 },
+  { product_id: 'prod_lm_15l',     product_name: '1.5L Lemon',         SKU: 'LM-15L',     flavor: 'Lemon',   pack_size: '1.5L',        status: 'inactive', total_stock: 0,   low_stock_threshold: 5,  price: 90,  cost_price: 70, back_order: 0, loose_bottles: 0, case_size: 6 },
+  { product_id: 'prod_or_15l',     product_name: '1.5L Orange',        SKU: 'OR-15L',     flavor: 'Orange',  pack_size: '1.5L',        status: 'inactive', total_stock: 0,   low_stock_threshold: 5,  price: 90,  cost_price: 70, back_order: 0, loose_bottles: 0, case_size: 6 },
   // Qute 237mL (case of 12, per assortment pack size)
-  { product_id: 'prod_rc_qute',    product_name: 'Qute 237mL RC Cola', SKU: 'RC-QUTE',    flavor: 'RC Cola', pack_size: 'Qute 237mL',  status: 'active',   total_stock: 163, low_stock_threshold: 30, price: 25,  cost_price: 19, back_order: 0, case_size: 12 },
+  { product_id: 'prod_rc_qute',    product_name: 'Qute 237mL RC Cola', SKU: 'RC-QUTE',    flavor: 'RC Cola', pack_size: 'Qute 237mL',  status: 'active',   total_stock: 163, low_stock_threshold: 30, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_lm_qute',    product_name: 'Qute 237mL Lemon',   SKU: 'LM-QUTE',    flavor: 'Lemon',   pack_size: 'Qute 237mL',  status: 'active',   total_stock: 40,  low_stock_threshold: 15, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_or_qute',    product_name: 'Qute 237mL Orange',  SKU: 'OR-QUTE',    flavor: 'Orange',  pack_size: 'Qute 237mL',  status: 'active',   total_stock: 35,  low_stock_threshold: 15, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_se_qute',    product_name: 'Qute 237mL Seetrus', SKU: 'SE-QUTE',    flavor: 'Seetrus', pack_size: 'Qute 237mL',  status: 'active',   total_stock: 15,  low_stock_threshold: 10, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
   // 237mL (case of 12, same physical bottle as EJ assortment pack size)
-  { product_id: 'prod_lm_237',     product_name: '237mL Lemon',        SKU: 'LM-237',     flavor: 'Lemon',   pack_size: '237mL',       status: 'active',   total_stock: 41,  low_stock_threshold: 15, price: 25,  cost_price: 19, back_order: 0, case_size: 12 },
-  { product_id: 'prod_or_237',     product_name: '237mL Orange',       SKU: 'OR-237',     flavor: 'Orange',  pack_size: '237mL',       status: 'active',   total_stock: 49,  low_stock_threshold: 15, price: 25,  cost_price: 19, back_order: 0, case_size: 12 },
-  { product_id: 'prod_se_237',     product_name: '237mL Seetrus',      SKU: 'SE-237',     flavor: 'Seetrus', pack_size: '237mL',       status: 'active',   total_stock: 20,  low_stock_threshold: 10, price: 25,  cost_price: 19, back_order: 0, case_size: 12 },
-  // EJ 237mL (inactive)
-  { product_id: 'prod_ej_fruit',   product_name: '237mL EJ Mixed Fruit',    SKU: 'EJ-FRUIT',   flavor: 'EJ Mixed Fruit',    pack_size: '237mL', status: 'inactive', total_stock: 0, low_stock_threshold: 5, price: 30, cost_price: 23, back_order: 0, case_size: 12 },
-  { product_id: 'prod_ej_berries', product_name: '237mL EJ Mixed Berries',  SKU: 'EJ-BERRY',   flavor: 'EJ Mixed Berries',  pack_size: '237mL', status: 'inactive', total_stock: 0, low_stock_threshold: 5, price: 30, cost_price: 23, back_order: 0, case_size: 12 },
-  { product_id: 'prod_ej_citrus',  product_name: '237mL EJ Japanese Citrus', SKU: 'EJ-CITRUS', flavor: 'EJ Japanese Citrus', pack_size: '237mL', status: 'inactive', total_stock: 0, low_stock_threshold: 5, price: 30, cost_price: 23, back_order: 0, case_size: 12 },
+  { product_id: 'prod_lm_237',     product_name: '237mL Lemon',        SKU: 'LM-237',     flavor: 'Lemon',   pack_size: '237mL',       status: 'active',   total_stock: 41,  low_stock_threshold: 15, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_or_237',     product_name: '237mL Orange',       SKU: 'OR-237',     flavor: 'Orange',  pack_size: '237mL',       status: 'active',   total_stock: 49,  low_stock_threshold: 15, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_se_237',     product_name: '237mL Seetrus',      SKU: 'SE-237',     flavor: 'Seetrus', pack_size: '237mL',       status: 'active',   total_stock: 20,  low_stock_threshold: 10, price: 25,  cost_price: 19, back_order: 0, loose_bottles: 0, case_size: 12 },
+  // EJ 237mL (active)
+  { product_id: 'prod_ej_fruit',   product_name: '237mL EJ Mixed Fruit',    SKU: 'EJ-FRUIT',   flavor: 'EJ Mixed Fruit',    pack_size: '237mL', status: 'active', total_stock: 24, low_stock_threshold: 8, price: 30, cost_price: 23, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_ej_berries', product_name: '237mL EJ Mixed Berries',  SKU: 'EJ-BERRY',   flavor: 'EJ Mixed Berries',  pack_size: '237mL', status: 'active', total_stock: 24, low_stock_threshold: 8, price: 30, cost_price: 23, back_order: 0, loose_bottles: 0, case_size: 12 },
+  { product_id: 'prod_ej_citrus',  product_name: '237mL EJ Japanese Citrus', SKU: 'EJ-CITRUS', flavor: 'EJ Japanese Citrus', pack_size: '237mL', status: 'active', total_stock: 24, low_stock_threshold: 8, price: 30, cost_price: 23, back_order: 0, loose_bottles: 0, case_size: 12 },
 ]
 
 // Sales by item — used to derive total units sold and profit
@@ -187,4 +190,77 @@ export const MOCK_STOCK_MOVEMENTS = [
   // 2026-07-08: bulk delivery + oversell
   { movement_id: 'mv_20260708_001', product_id: 'prod_rc_mega', date: '2026-07-08', type: 'in',  quantity: 40, note: null, created_at: '2026-07-08T09:00:00.000Z' },
   { movement_id: 'mv_20260708_002', product_id: 'prod_rc_240',  date: '2026-07-08', type: 'out', quantity: 5,  note: 'Oversold — needs reconciliation', created_at: '2026-07-08T17:00:00.000Z' },
+]
+
+export const MOCK_ASSORTMENTS = [
+  {
+    assortment_id: 'asrt_mega',
+    name: 'Mega Assorted',
+    price: 275,
+    original_price: 280,
+    pack_size_label: 'Case of 12',
+    items: [
+      { product_id: 'prod_rc_mega', bottles: 4 },
+      { product_id: 'prod_lm_mega', bottles: 4 },
+      { product_id: 'prod_or_mega', bottles: 4 },
+    ],
+  },
+  {
+    assortment_id: 'asrt_240',
+    name: '240mL Assorted',
+    price: 199,
+    original_price: 204,
+    pack_size_label: 'Case of 24',
+    items: [
+      { product_id: 'prod_rc_240', bottles: 6 },
+      { product_id: 'prod_lm_240', bottles: 6 },
+      { product_id: 'prod_or_240', bottles: 6 },
+      { product_id: 'prod_se_240', bottles: 6 },
+    ],
+  },
+  {
+    assortment_id: 'asrt_litro',
+    name: 'Litro Assorted',
+    price: 211,
+    pack_size_label: 'Pack of 6',
+    items: [
+      { product_id: 'prod_rc_litro', bottles: 2 },
+      { product_id: 'prod_lm_litro', bottles: 2 },
+      { product_id: 'prod_or_litro', bottles: 2 },
+    ],
+  },
+  {
+    assortment_id: 'asrt_15l',
+    name: '1.5L Assorted',
+    price: 322,
+    pack_size_label: 'Pack of 6',
+    items: [
+      { product_id: 'prod_rc_15l', bottles: 2 },
+      { product_id: 'prod_lm_15l', bottles: 2 },
+      { product_id: 'prod_or_15l', bottles: 2 },
+    ],
+  },
+  {
+    assortment_id: 'asrt_qute',
+    name: 'Qute 237mL Assorted',
+    price: 150,
+    pack_size_label: 'Pack of 12',
+    items: [
+      { product_id: 'prod_rc_qute', bottles: 3 },
+      { product_id: 'prod_lm_qute', bottles: 3 },
+      { product_id: 'prod_or_qute', bottles: 3 },
+      { product_id: 'prod_se_qute', bottles: 3 },
+    ],
+  },
+  {
+    assortment_id: 'asrt_ej',
+    name: 'EJ 237mL Assorted',
+    price: 171,
+    pack_size_label: 'Pack of 12',
+    items: [
+      { product_id: 'prod_ej_fruit',   bottles: 4 },
+      { product_id: 'prod_ej_berries', bottles: 4 },
+      { product_id: 'prod_ej_citrus',  bottles: 4 },
+    ],
+  },
 ]
