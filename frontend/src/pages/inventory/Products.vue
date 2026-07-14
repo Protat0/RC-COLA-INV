@@ -9,7 +9,7 @@
         <CardTemplate size="xs" border-color="error" border-position="start" title="Out of Stock" :value="productStats.outOfStock" subtitle="Products" />
       </div>
       <div class="col-6 col-md-3 mb-2">
-        <CardTemplate size="xs" border-color="success" border-position="start" title="Total" :value="productStats.total" subtitle="Products" />
+        <CardTemplate size="xs" border-color="warning" border-position="start" title="Loose Bottles" :value="totalLooseBottles" subtitle="Across all products" />
       </div>
       <div class="col-6 col-md-3 mb-2">
         <CardTemplate size="xs" border-color="warning" border-position="start" title="Back Ordered" :value="totalBackOrdered" subtitle="Cases owed to customers" />
@@ -186,6 +186,7 @@
               </span>
             </th>
             <th style="width: 90px; text-align: right;">Case size</th>
+            <th style="width: 100px; text-align: right;">Loose btls</th>
             <th style="width: 110px; text-align: right;">Back Order</th>
             <th style="width: 130px; text-align: right;" class="sortable-header" @click="handleSort('sellingPrice')">
               <span class="header-content justify-content-end">
@@ -229,6 +230,11 @@
             </td>
             <td class="text-end text-secondary">
               {{ product.case_size ?? '—' }}
+            </td>
+            <td class="text-end">
+              <span :class="(product.loose_bottles ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
+                {{ product.loose_bottles ?? 0 }}
+              </span>
             </td>
             <td class="text-end">
               <span :class="(product.back_order ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
@@ -406,6 +412,10 @@ export default {
 
     const totalBackOrdered = computed(() =>
       products.value.reduce((sum, p) => sum + (p.back_order || 0), 0)
+    )
+
+    const totalLooseBottles = computed(() =>
+      products.value.reduce((sum, p) => sum + (p.loose_bottles || 0), 0)
     )
 
     const packSizeFilter = ref('')
@@ -716,6 +726,7 @@ export default {
       sortDirection,
 
       totalBackOrdered,
+      totalLooseBottles,
       packSizeFilter,
       packSizes,
       packFilteredProducts,
