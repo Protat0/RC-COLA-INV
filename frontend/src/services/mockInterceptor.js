@@ -8,7 +8,9 @@ import {
   MOCK_MONTHLY_DATA,
   MOCK_TRANSACTIONS,
   MOCK_STOCK_MOVEMENTS,
+  MOCK_ASSORTMENTS,
 } from '../data/mockData.js'
+import { applyAssortedSales } from '@/utils/assortmentAlgorithm.js'
 
 function mockAdapter(data, status = 200) {
   return (config) =>
@@ -101,6 +103,10 @@ function getHandler(url) {
     return mockAdapter({ data: [] })
   }
 
+  if (url.includes('/assortments/')) {
+    return mockAdapter({ data: MOCK_ASSORTMENTS, success: true })
+  }
+
   return mockAdapter({ data: [], success: true })
 }
 
@@ -113,15 +119,84 @@ function getPostHandler(config) {
     return (cfg) => {
       const body = JSON.parse(cfg.data || '{}')
       const items = body.items ?? []
+      const assortedSales = body.assorted_sales ?? []
       const entryDate = body.entry_date
       if (!entryDate) {
         return Promise.reject(new Error('entry_date is required'))
       }
+
+      // Run the assortment algorithm against current loose state
+      const initialLoose = {}
+      MOCK_PRODUCTS.forEach(p => {
+        initialLoose[p.product_id] = p.loose_bottles ?? 0
+      })
+      let algoResult
+      try {
+        algoResult = applyAssortedSales({
+          sales: assortedSales,
+          assortments: MOCK_ASSORTMENTS,
+          products: MOCK_PRODUCTS,
+          initialLoose,
+        })
+      } catch (err) {
+        return Promise.reject(err)
+      }
+
       const created_at = new Date().toISOString()
       const movements = []
       const back_order_changes = []
+      const loose_changes = []
       let flagged = false
 
+      // Assortment name lookup for movement notes
+      const assortmentNameById = new Map(
+        MOCK_ASSORTMENTS.map(a => [a.assortment_id, a.name])
+      )
+
+      // Generate cases_out movements for the algorithm's per-product cases-broken,
+      // one movement per (product, assortment sale) so notes stay auditable
+      algoResult.breakdown.forEach(b => {
+        const note = `Assortment fulfillment: ${b.qty} × ${assortmentNameById.get(b.assortment_id) || b.assortment_id}`
+        b.effects.forEach(eff => {
+          if (eff.cases_broken > 0) {
+            movementCounter += 1
+            const mv = {
+              movement_id: `mv_${Date.now()}_${movementCounter}`,
+              product_id: eff.product_id,
+              date: entryDate,
+              type: 'out',
+              quantity: eff.cases_broken,
+              note,
+              created_at,
+            }
+            MOCK_STOCK_MOVEMENTS.push(mv)
+            movements.push(mv)
+            const product = MOCK_PRODUCTS.find(p => p.product_id === eff.product_id)
+            if (product) {
+              product.total_stock -= eff.cases_broken
+              if (product.total_stock < 0) flagged = true
+            }
+          }
+        })
+      })
+
+      // Apply per-product loose changes from the algorithm
+      Object.entries(algoResult.looseChanges).forEach(([product_id, delta]) => {
+        if (delta === 0) return
+        const product = MOCK_PRODUCTS.find(p => p.product_id === product_id)
+        if (!product) return
+        const oldLoose = product.loose_bottles ?? 0
+        product.loose_bottles = Math.max(0, oldLoose + delta)
+        loose_changes.push({
+          product_id,
+          old_loose: oldLoose,
+          new_loose: product.loose_bottles,
+          delta,
+          source: 'assortment',
+        })
+      })
+
+      // Process direct per-item entries (cases_in, cases_out, bo_delta, loose_delta)
       items.forEach(item => {
         const product = MOCK_PRODUCTS.find(p => p.product_id === item.product_id)
         if (!product) return
@@ -129,6 +204,7 @@ function getPostHandler(config) {
         const casesIn = Number(item.cases_in) || 0
         const casesOut = Number(item.cases_out) || 0
         const boDelta = Number(item.bo_delta) || 0
+        const looseDelta = Number(item.loose_delta) || 0
 
         if (casesIn > 0) {
           movementCounter += 1
@@ -173,6 +249,18 @@ function getPostHandler(config) {
             delta: boDelta,
           })
         }
+
+        if (looseDelta !== 0) {
+          const oldLoose = product.loose_bottles ?? 0
+          product.loose_bottles = Math.max(0, oldLoose + looseDelta)
+          loose_changes.push({
+            product_id: item.product_id,
+            old_loose: oldLoose,
+            new_loose: product.loose_bottles,
+            delta: looseDelta,
+            source: 'manual',
+          })
+        }
       })
 
       return Promise.resolve({
@@ -184,6 +272,8 @@ function getPostHandler(config) {
             created_at,
             movements,
             back_order_changes,
+            loose_changes,
+            assortment_breakdown: algoResult.breakdown,
             status: flagged ? 'flagged' : 'applied',
           },
         },
