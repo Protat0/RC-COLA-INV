@@ -1,178 +1,260 @@
 import { vi } from 'vitest'
 import { ref } from 'vue'
-import { api } from '@/services/api.js'
 
 vi.mock('@/services/api.js', () => ({
-  api: { get: vi.fn(), post: vi.fn() },
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+  },
 }))
 
-const MOCK_ACTIVE = [
-  { product_id: 'prod_a', product_name: 'A', status: 'active', total_stock: 100, back_order: 0 },
-  { product_id: 'prod_b', product_name: 'B', status: 'active', total_stock: 50,  back_order: 2 },
-]
-const MOCK_INACTIVE = { product_id: 'prod_c', product_name: 'C', status: 'inactive', total_stock: 10, back_order: 0 }
+const mockProducts = ref([
+  { product_id: 'p_rc',  product_name: 'Mega RC Cola', flavor: 'RC Cola', pack_size: 'Mega', status: 'active', total_stock: 100, back_order: 0, loose_bottles: 8, case_size: 12 },
+  { product_id: 'p_lm',  product_name: 'Mega Lemon',   flavor: 'Lemon',   pack_size: 'Mega', status: 'active', total_stock: 50,  back_order: 1, loose_bottles: 0, case_size: 12 },
+  { product_id: 'p_or',  product_name: 'Mega Orange',  flavor: 'Orange',  pack_size: 'Mega', status: 'active', total_stock: 30,  back_order: 0, loose_bottles: 0, case_size: 12 },
+])
 
-vi.mock('../useProducts.js', () => ({
-  useProducts: vi.fn(() => ({
-    products: ref([...MOCK_ACTIVE, MOCK_INACTIVE]),
+vi.mock('@/composables/api/useProducts.js', () => ({
+  useProducts: () => ({
+    products: mockProducts,
     loading: ref(false),
-    initializeProducts: vi.fn(),
-  })),
+    initializeProducts: vi.fn().mockResolvedValue(undefined),
+  }),
 }))
 
+const mockAssortments = ref([
+  {
+    assortment_id: 'asrt_mega',
+    name: 'Mega Assorted',
+    price: 275,
+    pack_size_label: 'Case of 12',
+    items: [
+      { product_id: 'p_rc', bottles: 4 },
+      { product_id: 'p_lm', bottles: 4 },
+      { product_id: 'p_or', bottles: 4 },
+    ],
+  },
+])
+
+vi.mock('@/composables/api/useAssortments.js', () => ({
+  useAssortments: () => ({
+    assortments: mockAssortments,
+    loading: ref(false),
+    error: ref(null),
+    fetchAssortments: vi.fn().mockResolvedValue(undefined),
+  }),
+}))
+
+import { api } from '@/services/api.js'
 import { useEodUpdate } from '../useEodUpdate.js'
 
-describe('useEodUpdate', () => {
-  it('initEntries creates {cases_in, cases_out, bo_delta} for active products only', () => {
-    const { entries, initEntries } = useEodUpdate()
-    initEntries()
-    expect(Object.keys(entries.value)).toHaveLength(2)
-    expect(entries.value['prod_a']).toEqual({ cases_in: 0, cases_out: 0, bo_delta: 0 })
-    expect(entries.value['prod_b']).toEqual({ cases_in: 0, cases_out: 0, bo_delta: 0 })
-    expect(entries.value['prod_c']).toBeUndefined()
+describe('useEodUpdate — direct entries', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('changedItems empty initially', () => {
-    const { changedItems, initEntries } = useEodUpdate()
-    initEntries()
-    expect(changedItems.value).toHaveLength(0)
+  it('initEntries seeds every active product with zeroed direct fields', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    expect(c.entries.value.p_rc).toEqual({ cases_in: 0, cases_out: 0, bo_delta: 0, loose_delta: 0 })
+    expect(c.entries.value.p_lm).toEqual({ cases_in: 0, cases_out: 0, bo_delta: 0, loose_delta: 0 })
+    expect(c.entries.value.p_or).toEqual({ cases_in: 0, cases_out: 0, bo_delta: 0, loose_delta: 0 })
   })
 
-  it('changedItems includes product when cases_in > 0', () => {
-    const { entries, changedItems, initEntries } = useEodUpdate()
-    initEntries()
-    entries.value['prod_a'].cases_in = 20
-    expect(changedItems.value).toHaveLength(1)
-    expect(changedItems.value[0]).toMatchObject({
-      product_id: 'prod_a',
-      cases_in: 20,
-      cases_out: 0,
-      bo_delta: 0,
+  it('changedItems includes cases_out_total, loose_before, loose_after fields', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_rc.cases_out = 5
+    c.entries.value.p_rc.loose_delta = -3
+    const [item] = c.changedItems.value
+    expect(item).toMatchObject({
+      product_id: 'p_rc',
+      cases_in: 0,
+      cases_out_direct: 5,
+      cases_broken: 0,
+      cases_out_total: 5,
+      loose_delta_direct: -3,
+      loose_delta_from_assortment: 0,
+      loose_delta_total: -3,
       stock_before: 100,
-      stock_after: 120,
+      stock_after: 95,
+      loose_before: 8,
+      loose_after: 5,
       needs_reconciliation: false,
     })
   })
 
-  it('changedItems includes product when cases_out > 0', () => {
-    const { entries, changedItems, initEntries } = useEodUpdate()
-    initEntries()
-    entries.value['prod_a'].cases_out = 10
-    expect(changedItems.value[0]).toMatchObject({
-      product_id: 'prod_a',
-      cases_out: 10,
-      stock_before: 100,
-      stock_after: 90,
-      needs_reconciliation: false,
+  it('cases_in > 0 raises stock_after and appears in changedItems', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_lm.cases_in = 3
+    const [item] = c.changedItems.value
+    expect(item).toMatchObject({
+      product_id: 'p_lm',
+      cases_in: 3,
+      cases_out_total: 0,
+      stock_before: 50,
+      stock_after: 53,
     })
   })
 
-  it('changedItems includes product when bo_delta != 0 even if stock unchanged', () => {
-    const { entries, changedItems, initEntries } = useEodUpdate()
-    initEntries()
-    entries.value['prod_b'].bo_delta = 1
-    expect(changedItems.value).toHaveLength(1)
-    expect(changedItems.value[0].product_id).toBe('prod_b')
-    expect(changedItems.value[0].bo_delta).toBe(1)
+  it('needs_reconciliation flags when stock_after < 0', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_or.cases_out = 100
+    const [item] = c.changedItems.value
+    expect(item.stock_after).toBe(-70)
+    expect(item.needs_reconciliation).toBe(true)
+    expect(c.flaggedItems.value).toHaveLength(1)
   })
 
-  it('stock_after combines cases_in and cases_out correctly', () => {
-    const { entries, changedItems, initEntries } = useEodUpdate()
-    initEntries()
-    entries.value['prod_a'].cases_in = 30
-    entries.value['prod_a'].cases_out = 8
-    expect(changedItems.value[0].stock_after).toBe(122)  // 100 + 30 - 8
+  it('loose_after clamps at 0 for negative loose_delta', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_rc.loose_delta = -20   // starts at 8, delta wants -20
+    const [item] = c.changedItems.value
+    expect(item.loose_before).toBe(8)
+    expect(item.loose_delta_total).toBe(-20)
+    expect(item.loose_after).toBe(0)         // clamped
+  })
+})
+
+describe('useEodUpdate — assortment effects', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('needs_reconciliation true when stock_after < 0', () => {
-    const { entries, changedItems, flaggedItems, initEntries } = useEodUpdate()
-    initEntries()
-    entries.value['prod_a'].cases_out = 150  // stock is 100
-    expect(changedItems.value[0].needs_reconciliation).toBe(true)
-    expect(changedItems.value[0].stock_after).toBe(-50)
-    expect(flaggedItems.value).toHaveLength(1)
-  })
-
-  it('needs_reconciliation false when stock_after === 0', () => {
-    const { entries, changedItems, flaggedItems, initEntries } = useEodUpdate()
-    initEntries()
-    entries.value['prod_a'].cases_out = 100
-    expect(changedItems.value[0].needs_reconciliation).toBe(false)
-    expect(flaggedItems.value).toHaveLength(0)
-  })
-
-  it('hasChanges reflects entries state', () => {
-    const { entries, hasChanges, initEntries } = useEodUpdate()
-    initEntries()
-    expect(hasChanges.value).toBe(false)
-    entries.value['prod_b'].cases_in = 5
-    expect(hasChanges.value).toBe(true)
-  })
-
-  describe('submitEod', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
+  it('setting assortedSales populates assortmentPreview per assortment', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.assortedSales.value = { asrt_mega: 1 }
+    expect(c.assortmentPreview.value).toHaveLength(1)
+    expect(c.assortmentPreview.value[0]).toMatchObject({
+      assortment_id: 'asrt_mega',
+      qty: 1,
     })
+    expect(c.assortmentPreview.value[0].effects).toHaveLength(3)
+  })
 
-    it('success path: posts correct payload, sets submitted and lastSubmission, clears error', async () => {
-      const mockResponseData = { id: 1, entry_date: '2026-07-10', items: [] }
-      api.post.mockResolvedValue({ data: { data: mockResponseData } })
-
-      const { entries, submitted, lastSubmission, error, submitEod, initEntries } = useEodUpdate()
-      initEntries()
-      entries.value['prod_a'].cases_in = 5
-
-      await submitEod('2026-07-10')
-
-      expect(api.post).toHaveBeenCalledWith('/stock/eod/', {
-        entry_date: '2026-07-10',
-        items: [
-          { product_id: 'prod_a', cases_in: 5, cases_out: 0, bo_delta: 0 },
-        ],
-      })
-      expect(submitted.value).toBe(true)
-      expect(lastSubmission.value).toEqual(mockResponseData)
-      expect(error.value).toBeNull()
-    })
-
-    it('error path: api.post rejects, sets error, submitted stays false, lastSubmission stays null', async () => {
-      api.post.mockRejectedValue(new Error('Network error'))
-
-      const { submitted, lastSubmission, error, submitEod, initEntries } = useEodUpdate()
-      initEntries()
-
-      await expect(submitEod('2026-07-10')).rejects.toThrow('Network error')
-
-      expect(submitted.value).toBe(false)
-      expect(lastSubmission.value).toBeNull()
-      expect(error.value).not.toBeNull()
-    })
-
-    it('empty entries path: submitEod sends items: [] when no non-zero entries', async () => {
-      api.post.mockResolvedValue({ data: { data: {} } })
-
-      const { submitEod, initEntries } = useEodUpdate()
-      initEntries()
-
-      await submitEod('2026-07-10')
-
-      expect(api.post).toHaveBeenCalledWith('/stock/eod/', {
-        entry_date: '2026-07-10',
-        items: [],
-      })
+  it('assortmentEffects reflects loose-first drawdown against current loose_bottles', () => {
+    // p_rc starts with loose_bottles: 8; 1 Mega sale needs 4 per flavor
+    // → p_rc uses 4 from loose (no case broken)
+    // → p_lm and p_or have 0 loose → each breaks 1 case, +8 loose each
+    const c = useEodUpdate()
+    c.initEntries()
+    c.assortedSales.value = { asrt_mega: 1 }
+    expect(c.assortmentEffects.value).toMatchObject({
+      p_rc: { cases_broken: 0, loose_delta: -4 },
+      p_lm: { cases_broken: 1, loose_delta: 8 },
+      p_or: { cases_broken: 1, loose_delta: 8 },
     })
   })
 
-  it('per-instance state isolation: mutating a does not affect b', () => {
+  it('changedItems merges direct entries with assortment effects', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_lm.cases_in = 2   // direct in for Lemon
+    c.assortedSales.value = { asrt_mega: 1 }
+    const items = c.changedItems.value
+    const lmItem = items.find(i => i.product_id === 'p_lm')
+    expect(lmItem).toMatchObject({
+      cases_in: 2,
+      cases_out_direct: 0,
+      cases_broken: 1,
+      cases_out_total: 1,
+      loose_delta_from_assortment: 8,
+      stock_before: 50,
+      stock_after: 51,   // 50 + 2 - 1
+      loose_before: 0,
+      loose_after: 8,
+    })
+  })
+
+  it('assortment sale with qty 0 has no effect', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.assortedSales.value = { asrt_mega: 0 }
+    expect(c.assortmentPreview.value).toEqual([])
+    expect(c.assortmentEffects.value).toEqual({})
+    expect(c.changedItems.value).toEqual([])
+  })
+})
+
+describe('useEodUpdate — submit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('success path posts the extended payload with assorted_sales and loose_delta', async () => {
+    api.post.mockResolvedValue({ data: { success: true, data: { movements: [] } } })
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_rc.cases_out = 2
+    c.entries.value.p_rc.loose_delta = -1
+    c.assortedSales.value = { asrt_mega: 1 }
+    await c.submitEod('2026-07-13')
+    expect(api.post).toHaveBeenCalledWith('/stock/eod/', expect.objectContaining({
+      entry_date: '2026-07-13',
+      assorted_sales: [{ assortment_id: 'asrt_mega', qty: 1 }],
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          product_id: 'p_rc',
+          cases_in: 0,
+          cases_out: 2,        // DIRECT ONLY — algorithm cases go via assorted_sales
+          bo_delta: 0,
+          loose_delta: -1,
+        }),
+      ]),
+    }))
+    expect(c.submitted.value).toBe(true)
+    expect(c.error.value).toBeNull()
+  })
+
+  it('empty assortedSales sends assorted_sales: []', async () => {
+    api.post.mockResolvedValue({ data: { success: true, data: {} } })
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_lm.cases_out = 1
+    await c.submitEod('2026-07-13')
+    expect(api.post.mock.calls[0][1].assorted_sales).toEqual([])
+  })
+
+  it('error path leaves submitted false and sets error', async () => {
+    api.post.mockRejectedValue(new Error('boom'))
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_rc.cases_out = 1
+    await expect(c.submitEod('2026-07-13')).rejects.toThrow('boom')
+    expect(c.submitted.value).toBe(false)
+    expect(c.error.value).toBe('boom')
+  })
+})
+
+describe('useEodUpdate — resetForm', () => {
+  it('clears entries, assortedSales, submitted, lastSubmission, error', () => {
+    const c = useEodUpdate()
+    c.initEntries()
+    c.entries.value.p_rc.cases_out = 5
+    c.assortedSales.value = { asrt_mega: 2 }
+    c.submitted.value = true
+    c.error.value = 'x'
+    c.resetForm()
+    expect(c.submitted.value).toBe(false)
+    expect(c.error.value).toBeNull()
+    expect(c.assortedSales.value).toEqual({})
+    expect(c.entries.value.p_rc.cases_out).toBe(0)
+  })
+})
+
+describe('useEodUpdate — instances', () => {
+  it('two instances have independent state', () => {
     const a = useEodUpdate()
     const b = useEodUpdate()
     a.initEntries()
     b.initEntries()
-
-    a.entries.value['prod_a'].cases_out = 5
-
-    expect(b.entries.value['prod_a'].cases_out).toBe(0)
-    expect(a.changedItems.value.length).toBe(1)
-    expect(b.changedItems.value.length).toBe(0)
+    a.entries.value.p_rc.cases_out = 5
+    a.assortedSales.value = { asrt_mega: 3 }
+    expect(b.entries.value.p_rc.cases_out).toBe(0)
+    expect(b.assortedSales.value).toEqual({})
   })
 })
