@@ -74,6 +74,17 @@ describe('StockHistory.vue', () => {
     expect(looseCells[1].text()).toBe('0')
   })
 
+  it('renders a BO column showing back_order or em-dash when zero', () => {
+    const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
+    const headers = wrapper.findAll('th')
+    const boHeader = headers.find(h => h.text() === 'BO')
+    expect(boHeader).toBeTruthy()
+    const boCells = wrapper.findAll('[data-testid="bo-cell"]')
+    expect(boCells).toHaveLength(2)
+    expect(boCells[0].text()).toBe('—') // prod_a has back_order: 0
+    expect(boCells[1].text()).toBe('1') // prod_b has back_order: 1
+  })
+
   it('renders a date column per day in the range', () => {
     const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
     const dateHeaders = wrapper.findAll('[data-testid="date-header"]')

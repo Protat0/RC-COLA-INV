@@ -58,6 +58,7 @@
             <tr>
               <th class="sticky-col header-cell product-header">Product</th>
               <th class="sticky-col-loose header-cell loose-header">Loose</th>
+              <th class="sticky-col-bo header-cell bo-header">BO</th>
               <th
                 v-for="d in dates"
                 :key="d"
@@ -76,12 +77,15 @@
             >
               <td class="sticky-col product-cell">
                 <div style="font-weight: 600; color: var(--text-primary);">{{ product.product_name }}</div>
-                <small v-if="product.back_order > 0" style="color: var(--text-tertiary);">BO: {{ product.back_order }}</small>
               </td>
               <td data-testid="loose-cell" class="sticky-col-loose loose-cell">
                 <span :class="(product.loose_bottles ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
                   {{ product.loose_bottles ?? 0 }}
                 </span>
+              </td>
+              <td data-testid="bo-cell" class="sticky-col-bo bo-cell">
+                <span v-if="(product.back_order ?? 0) > 0" class="text-warning fw-bold">{{ product.back_order }}</span>
+                <span v-else class="text-tertiary-medium">—</span>
               </td>
               <td
                 v-for="d in dates"
@@ -108,6 +112,7 @@
             <tr data-testid="aggregate-footer" class="footer-row">
               <td class="sticky-col footer-label">Daily Totals</td>
               <td class="sticky-col-loose loose-cell"></td>
+              <td class="sticky-col-bo bo-cell"></td>
               <td
                 v-for="d in dates"
                 :key="d"
@@ -295,17 +300,26 @@ export default {
   background: var(--surface-primary);
 }
 
-/* Second sticky column (Loose) — pinned right after the 220px Product column.
-   Owns the right-edge shadow so it visually terminates the sticky region. */
+/* Second sticky column (Loose) — pinned right after the 220px Product column. */
 .sticky-col-loose {
   position: sticky;
   left: 220px;
   z-index: 2;
   background: var(--surface-primary);
+}
+
+/* Third sticky column (BO) — pinned right after Loose (260 = 220 + 40).
+   Owns the right-edge shadow so it visually terminates the sticky region. */
+.sticky-col-bo {
+  position: sticky;
+  left: 260px;
+  z-index: 2;
+  background: var(--surface-primary);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
 }
 
-.loose-header {
+.loose-header,
+.bo-header {
   text-align: left;
   width: 40px;
   min-width: 40px;
@@ -314,7 +328,8 @@ export default {
   padding-right: 0.15rem;
 }
 
-.loose-cell {
+.loose-cell,
+.bo-cell {
   text-align: left;
   padding: 0.55rem 0.15rem;
   width: 40px;
