@@ -76,9 +76,7 @@
             >
               <td class="sticky-col product-cell">
                 <div style="font-weight: 600; color: var(--text-primary);">{{ product.product_name }}</div>
-                <small style="color: var(--text-tertiary);">
-                  {{ product.pack_size }}<span v-if="product.back_order > 0"> · BO: {{ product.back_order }}</span>
-                </small>
+                <small v-if="product.back_order > 0" style="color: var(--text-tertiary);">BO: {{ product.back_order }}</small>
               </td>
               <td data-testid="loose-cell" class="sticky-col-loose loose-cell">
                 <span :class="(product.loose_bottles ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
