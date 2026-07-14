@@ -403,26 +403,27 @@ thead .sticky-col-bo {
 .footer-label {
   font-weight: 700;
   color: var(--text-primary);
-  padding: 0.55rem 0.75rem;
+  padding: 0.75rem 0.75rem;
   border-top: 2px solid var(--border-primary);
+  font-size: 0.9rem;
 }
 
 .footer-cell {
   border-top: 2px solid var(--border-primary);
-  padding: 0.4rem;
+  padding: 0.6rem 0.4rem;
 }
 
 .footer-in {
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--status-success);
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .footer-out {
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--status-error);
-  line-height: 1.1;
+  line-height: 1.2;
 }
 </style>
