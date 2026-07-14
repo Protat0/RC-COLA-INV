@@ -57,7 +57,7 @@
           <thead>
             <tr>
               <th class="sticky-col header-cell product-header">Product</th>
-              <th class="text-end" style="width: 80px;">Loose</th>
+              <th class="sticky-col-loose header-cell loose-header">Loose</th>
               <th
                 v-for="d in dates"
                 :key="d"
@@ -80,7 +80,7 @@
                   {{ product.pack_size }}<span v-if="product.back_order > 0"> · BO: {{ product.back_order }}</span>
                 </small>
               </td>
-              <td data-testid="loose-cell" class="text-end">
+              <td data-testid="loose-cell" class="sticky-col-loose loose-cell">
                 <span :class="(product.loose_bottles ?? 0) > 0 ? 'text-warning fw-bold' : 'text-tertiary-medium'">
                   {{ product.loose_bottles ?? 0 }}
                 </span>
@@ -109,7 +109,7 @@
           <tfoot>
             <tr data-testid="aggregate-footer" class="footer-row">
               <td class="sticky-col footer-label">Daily Totals</td>
-              <td></td>
+              <td class="sticky-col-loose loose-cell"></td>
               <td
                 v-for="d in dates"
                 :key="d"
@@ -285,7 +285,9 @@ export default {
 
 .product-header {
   text-align: left;
+  width: 220px;
   min-width: 220px;
+  max-width: 220px;
 }
 
 .sticky-col {
@@ -293,12 +295,40 @@ export default {
   left: 0;
   z-index: 2;
   background: var(--surface-card);
+}
+
+/* Second sticky column (Loose) — pinned right after the 220px Product column.
+   Owns the right-edge shadow so it visually terminates the sticky region. */
+.sticky-col-loose {
+  position: sticky;
+  left: 220px;
+  z-index: 2;
+  background: var(--surface-card);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+}
+
+.loose-header {
+  text-align: right;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.loose-cell {
+  text-align: right;
+  padding: 0.55rem 0.75rem;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .product-cell {
   padding: 0.55rem 0.75rem;
+  width: 220px;
   min-width: 220px;
+  max-width: 220px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-primary);
 }
