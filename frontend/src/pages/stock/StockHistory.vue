@@ -271,7 +271,7 @@ export default {
 }
 
 .header-cell {
-  background: var(--surface-card);
+  background: var(--surface-primary);
   color: var(--text-primary);
   font-size: 0.72rem;
   font-weight: 600;
@@ -294,7 +294,7 @@ export default {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: var(--surface-card);
+  background: var(--surface-primary);
 }
 
 /* Second sticky column (Loose) — pinned right after the 220px Product column.
@@ -303,7 +303,7 @@ export default {
   position: sticky;
   left: 220px;
   z-index: 2;
-  background: var(--surface-card);
+  background: var(--surface-primary);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
 }
 
