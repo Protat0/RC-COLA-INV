@@ -64,6 +64,7 @@
                 :key="d"
                 data-testid="date-header"
                 class="header-cell"
+                :class="{ 'col-hover-header': hoveredDate === d }"
               >
                 {{ formatShortDate(d) }}
               </th>
@@ -74,6 +75,7 @@
               v-for="product in activeProducts"
               :key="product.product_id"
               data-testid="matrix-row"
+              :class="{ 'row-hover': hoveredProductId === product.product_id }"
             >
               <td class="sticky-col product-cell">
                 <div style="font-weight: 600; color: var(--text-primary);">{{ product.product_name }}</div>
@@ -91,7 +93,13 @@
                 v-for="d in dates"
                 :key="d"
                 class="cell"
+                :class="{
+                  'cell-hovered': hoveredProductId === product.product_id && hoveredDate === d,
+                  'col-hover': hoveredDate === d && hoveredProductId !== product.product_id,
+                }"
                 :title="cellTooltip(product, d)"
+                @mouseenter="onCellEnter(product, d, $event)"
+                @mouseleave="onCellLeave"
               >
                 <div class="cell-content">
                   <div class="bal" :style="cellStyle(product, d)">
@@ -127,14 +135,54 @@
       </div>
     </div>
 
+    <!-- Dwell popover (renders after 3s of hover on a data cell) -->
+    <div
+      v-if="popover"
+      data-testid="cell-popover"
+      class="cell-popover"
+      :style="{ top: popover.y + 'px', left: popover.x + 'px' }"
+    >
+      <div class="popover-title">{{ popover.product.product_name }}</div>
+      <div class="popover-sub">{{ formatShortDate(popover.date) }}</div>
+      <div class="popover-body">
+        <div class="popover-row">
+          <span>In</span>
+          <span :style="popover.delta.in > 0 ? 'color: var(--status-success); font-weight: 700;' : ''">
+            {{ popover.delta.in }}
+          </span>
+        </div>
+        <div class="popover-row">
+          <span>Out</span>
+          <span :style="popover.delta.out > 0 ? 'color: var(--status-error); font-weight: 700;' : ''">
+            {{ popover.delta.out }}
+          </span>
+        </div>
+        <div class="popover-row" v-if="popover.delta.adjustment !== 0">
+          <span>Adjustment</span>
+          <span style="color: var(--status-warning); font-weight: 700;">
+            {{ popover.delta.adjustment > 0 ? '+' : '' }}{{ popover.delta.adjustment }}
+          </span>
+        </div>
+        <div class="popover-row popover-balance">
+          <span>Balance</span>
+          <span style="font-weight: 700;">{{ popover.balance }}</span>
+        </div>
+      </div>
+      <div class="popover-footer">
+        Loose {{ popover.product.loose_bottles ?? 0 }} · BO {{ popover.product.back_order ?? 0 }} · Case {{ popover.product.case_size ?? '—' }}
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useStockMovements } from '@/composables/api/useStockMovements.js'
 import { useProducts } from '@/composables/api/useProducts.js'
 import { sortByVariant } from '@/data/mockData.js'
+
+const DWELL_MS = 3000
 
 export default {
   name: 'StockHistory',
@@ -228,9 +276,52 @@ export default {
       await fetchMovements({ dateFrom: dateFrom.value, dateTo: dateTo.value })
     }
 
+    // Hover + dwell popover state
+    const hoveredProductId = ref(null)
+    const hoveredDate = ref(null)
+    const popover = ref(null) // { product, date, delta, balance, x, y } | null
+    let dwellTimer = null
+
+    const clearDwell = () => {
+      if (dwellTimer) {
+        clearTimeout(dwellTimer)
+        dwellTimer = null
+      }
+    }
+
+    const onCellEnter = (product, date, event) => {
+      hoveredProductId.value = product.product_id
+      hoveredDate.value = date
+      clearDwell()
+      popover.value = null
+      const target = event?.currentTarget
+      dwellTimer = setTimeout(() => {
+        const rect = target?.getBoundingClientRect?.()
+        popover.value = {
+          product,
+          date,
+          delta: cellDelta(product, date),
+          balance: cellBalance(product, date),
+          x: rect ? rect.right + 8 : 0,
+          y: rect ? rect.top : 0,
+        }
+      }, DWELL_MS)
+    }
+
+    const onCellLeave = () => {
+      hoveredProductId.value = null
+      hoveredDate.value = null
+      clearDwell()
+      popover.value = null
+    }
+
     onMounted(() => {
       initializeProducts()
       fetchMovements({ dateFrom: dateFrom.value, dateTo: dateTo.value })
+    })
+
+    onBeforeUnmount(() => {
+      clearDwell()
     })
 
     return {
@@ -251,6 +342,11 @@ export default {
       dailyTotalOut,
       formatShortDate,
       reloadRange,
+      hoveredProductId,
+      hoveredDate,
+      popover,
+      onCellEnter,
+      onCellLeave,
     }
   }
 }
@@ -425,5 +521,84 @@ thead .sticky-col-bo {
   font-weight: 700;
   color: var(--status-error);
   line-height: 1.2;
+}
+
+/* Hover highlights */
+.matrix-table tbody tr.row-hover td {
+  background: var(--state-hover);
+}
+.matrix-table tbody tr.row-hover td.sticky-col,
+.matrix-table tbody tr.row-hover td.sticky-col-loose,
+.matrix-table tbody tr.row-hover td.sticky-col-bo {
+  /* Sticky cells need an opaque overlay because their base bg is white
+     and state-hover is a semi-transparent purple — layer both. */
+  background:
+    linear-gradient(var(--state-hover), var(--state-hover)),
+    var(--surface-primary);
+}
+.matrix-table td.cell.col-hover,
+.matrix-table td.cell.cell-hovered {
+  background: var(--state-hover);
+}
+.matrix-table td.cell.cell-hovered {
+  outline: 2px solid var(--text-accent, var(--status-success));
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+.matrix-table th.col-hover-header {
+  background: var(--state-active);
+  color: var(--text-primary);
+}
+
+/* Dwell popover */
+.cell-popover {
+  position: fixed;
+  z-index: 20;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  max-width: 280px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+.popover-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+.popover-sub {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+.popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.popover-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+.popover-row.popover-balance {
+  margin-top: 0.35rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-primary);
+}
+.popover-footer {
+  margin-top: 0.55rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-primary);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
 }
 </style>

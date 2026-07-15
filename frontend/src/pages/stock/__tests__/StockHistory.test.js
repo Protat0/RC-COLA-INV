@@ -95,4 +95,30 @@ describe('StockHistory.vue', () => {
     const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
     expect(wrapper.find('[data-testid="aggregate-footer"]').exists()).toBe(true)
   })
+
+  it('onCellEnter sets hovered product + date; onCellLeave clears them', () => {
+    const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
+    wrapper.vm.onCellEnter({ product_id: 'prod_a' }, '2026-07-05', { currentTarget: null })
+    expect(wrapper.vm.hoveredProductId).toBe('prod_a')
+    expect(wrapper.vm.hoveredDate).toBe('2026-07-05')
+    wrapper.vm.onCellLeave()
+    expect(wrapper.vm.hoveredProductId).toBeNull()
+    expect(wrapper.vm.hoveredDate).toBeNull()
+    expect(wrapper.vm.popover).toBeNull()
+  })
+
+  it('popover appears after 3s dwell and clears on cell leave', async () => {
+    vi.useFakeTimers()
+    const wrapper = shallowMount(StockHistory, { global: { stubs: { Teleport: true } } })
+    const product = { product_id: 'prod_a', product_name: 'Mega RC Cola', loose_bottles: 8, back_order: 0, case_size: 12 }
+    wrapper.vm.onCellEnter(product, '2026-07-05', { currentTarget: null })
+    expect(wrapper.vm.popover).toBeNull()
+    vi.advanceTimersByTime(3000)
+    expect(wrapper.vm.popover).toBeTruthy()
+    expect(wrapper.vm.popover.product.product_id).toBe('prod_a')
+    expect(wrapper.vm.popover.date).toBe('2026-07-05')
+    wrapper.vm.onCellLeave()
+    expect(wrapper.vm.popover).toBeNull()
+    vi.useRealTimers()
+  })
 })
